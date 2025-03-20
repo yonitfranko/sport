@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { Users, Medal, TrendingUp, ClipboardList, ArrowRight, Save, X } from 'lucide-react';
+import { Users, Medal, TrendingUp, ClipboardList, ArrowRight } from 'lucide-react';
 import { useState } from 'react';
 
 interface Measurement {
@@ -63,9 +63,32 @@ export default function ClassPage() {
   const navigate = useNavigate();
   const [selectedSport, setSelectedSport] = useState<string | null>(null);
   const [students, setStudents] = useState<Student[]>(demoStudents);
-  const [editingStudent, setEditingStudent] = useState<number | null>(null);
   const [showAddStudent, setShowAddStudent] = useState(false);
   const [newStudent, setNewStudent] = useState({ name: '', gender: 'male' as 'male' | 'female' });
+
+  // חישוב סטטיסטיקות
+  const stats = {
+    totalStudents: students.length,
+    topPerformers: students.filter(s => 
+      Object.values(s.measurements).some(m => 
+        (m.first && m.second && Math.abs(((m.second - m.first) / m.first) * 100) > 5)
+      )
+    ).length,
+    monthlyImprovement: students.reduce((acc, s) => {
+      let improvements = 0;
+      let total = 0;
+      Object.values(s.measurements).forEach(m => {
+        if (m.first && m.second) {
+          improvements += ((m.second - m.first) / m.first) * 100;
+          total++;
+        }
+      });
+      return total ? acc + (improvements / total) : acc;
+    }, 0) / students.filter(s => Object.keys(s.measurements).length > 0).length,
+    monthlyMeasurements: students.reduce((acc, s) => 
+      acc + Object.values(s.measurements).filter(m => m.firstDate || m.secondDate).length, 0
+    )
+  };
 
   const getCurrentDate = () => {
     const today = new Date();
@@ -119,45 +142,6 @@ export default function ClassPage() {
 
   const goBack = () => {
     navigate(-1);
-  };
-
-  const startEditing = (studentId: number) => {
-    if (selectedSport) {
-      setEditingStudent(studentId);
-    }
-  };
-
-  const cancelEditing = () => {
-    setEditingStudent(null);
-  };
-
-  const saveEditing = (studentId: number) => {
-    if (!selectedSport) return;
-
-    const first = parseFloat(student.measurements[selectedSport].first.toString());
-    const second = parseFloat(student.measurements[selectedSport].second.toString());
-    
-    if (isNaN(first) || isNaN(second)) {
-      alert('נא להזין מספרים תקינים');
-      return;
-    }
-
-    setStudents(prevStudents => 
-      prevStudents.map(student => {
-        if (student.id === studentId) {
-          return {
-            ...student,
-            measurements: {
-              ...student.measurements,
-              [selectedSport]: { first, second }
-            }
-          };
-        }
-        return student;
-      })
-    );
-
-    setEditingStudent(null);
   };
 
   const getTopPerformers = (sportId: string) => {
@@ -229,7 +213,7 @@ export default function ClassPage() {
             </div>
             <div>
               <p className="text-sm text-gray-500">תלמידים</p>
-              <p className="text-xl font-bold">32</p>
+              <p className="text-xl font-bold">{stats.totalStudents}</p>
             </div>
           </div>
         </div>
@@ -241,7 +225,7 @@ export default function ClassPage() {
             </div>
             <div>
               <p className="text-sm text-gray-500">מצטיינים</p>
-              <p className="text-xl font-bold">8</p>
+              <p className="text-xl font-bold">{stats.topPerformers}</p>
             </div>
           </div>
         </div>
@@ -253,7 +237,7 @@ export default function ClassPage() {
             </div>
             <div>
               <p className="text-sm text-gray-500">שיפור חודשי</p>
-              <p className="text-xl font-bold">12%</p>
+              <p className="text-xl font-bold">{stats.monthlyImprovement.toFixed(1)}%</p>
             </div>
           </div>
         </div>
@@ -265,7 +249,7 @@ export default function ClassPage() {
             </div>
             <div>
               <p className="text-sm text-gray-500">מדידות החודש</p>
-              <p className="text-xl font-bold">24</p>
+              <p className="text-xl font-bold">{stats.monthlyMeasurements}</p>
             </div>
           </div>
         </div>
@@ -281,7 +265,6 @@ export default function ClassPage() {
                 key={sport.id}
                 onClick={() => {
                   setSelectedSport(sport.id);
-                  setEditingStudent(null);
                 }}
                 className={`w-full h-12 rounded-lg p-2 text-white transition-all ${getButtonColorClass(sport.id)} ${
                   selectedSport === sport.id ? 'ring-2 ring-offset-2' : ''
@@ -358,7 +341,6 @@ export default function ClassPage() {
                     <tbody>
                       {students.map(student => {
                         const measurements = student.measurements[selectedSport] || { first: 0, second: 0 };
-                        const isEditing = editingStudent === student.id;
                         const currentSport = sportTypes.find(s => s.id === selectedSport);
                         let improvement = '-';
                         
@@ -427,10 +409,12 @@ export default function ClassPage() {
                             </td>
                             <td className="text-center py-2 px-4">
                               <button
-                                onClick={() => startEditing(student.id)}
+                                onClick={() => {
+                                  setSelectedSport(null);
+                                }}
                                 className="text-sm text-indigo-600 hover:text-indigo-800"
                               >
-                                ערוך
+                                סגור
                               </button>
                             </td>
                           </tr>
@@ -448,7 +432,7 @@ export default function ClassPage() {
                   <div className="bg-blue-50 rounded-lg p-4">
                     <h5 className="font-medium text-blue-700 mb-2">בנים</h5>
                     <div className="space-y-2">
-                      {getTopPerformers(selectedSport).boys.map((student, index) => {
+                      {getTopPerformers(selectedSport).boys.map(student => {
                         const measurements = student.measurements[selectedSport];
                         const bestResult = (selectedSport === 'sprint' || selectedSport === 'long_run')
                           ? Math.min(measurements.first || Infinity, measurements.second || Infinity)
@@ -479,7 +463,7 @@ export default function ClassPage() {
                   <div className="bg-pink-50 rounded-lg p-4">
                     <h5 className="font-medium text-pink-700 mb-2">בנות</h5>
                     <div className="space-y-2">
-                      {getTopPerformers(selectedSport).girls.map((student, index) => {
+                      {getTopPerformers(selectedSport).girls.map(student => {
                         const measurements = student.measurements[selectedSport];
                         const bestResult = (selectedSport === 'sprint' || selectedSport === 'long_run')
                           ? Math.min(measurements.first || Infinity, measurements.second || Infinity)

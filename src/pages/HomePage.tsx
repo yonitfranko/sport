@@ -1,6 +1,6 @@
-import { Medal, Star, Award, BarChart2, Upload, ChevronDown } from 'lucide-react';
+import { Star, Award, BarChart2, Upload, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 interface SportType {
   id: string;
@@ -8,18 +8,6 @@ interface SportType {
   icon: string;
   unit: string;
   color: string;
-}
-
-interface TopStudents {
-  [key: string]: {
-    [key: string]: string;
-  };
-}
-
-interface GradeRecords {
-  [key: string]: {
-    [key: string]: string;
-  };
 }
 
 interface Grade {
@@ -35,16 +23,6 @@ const sportTypes: SportType[] = [
   { id: 'ball_throw', name: 'זריקת כדור', icon: '🏐', unit: 'מטרים', color: 'amber' },
   { id: 'long_run', name: 'ריצה ארוכה', icon: '🏃‍♂️', unit: 'דקות', color: 'rose' }
 ];
-
-const topStudents: TopStudents = {
-  'sprint': {
-    'ד': 'רוני אלון - 12.5 שניות',
-    'ה': 'מיכל לוי - 12.0 שניות',
-    'ו': 'נועה גל - 11.8 שניות',
-    'ז': 'גלי כהן - 11.2 שניות',
-    'ח': 'אלון שגב - 10.8 שניות'
-  }
-};
 
 const grades: Grade[] = [
   { id: 'ד', name: 'שכבה ד׳', classes: ['ד1', 'ד2', 'ד3', 'ד4'] },
@@ -65,45 +43,6 @@ const getButtonColorClass = (sportId: string) => {
   return colorMap[sportId] || 'bg-gray-500 hover:bg-gray-600';
 };
 
-const getBgColorClass = (sportId: string) => {
-  const colorMap: { [key: string]: string } = {
-    'sprint': 'bg-teal-50',
-    'long_jump': 'bg-indigo-50',
-    'high_jump': 'bg-purple-50',
-    'ball_throw': 'bg-amber-50',
-    'long_run': 'bg-rose-50'
-  };
-  return colorMap[sportId] || 'bg-gray-50';
-};
-
-const getTextColorClass = (sportId: string) => {
-  const colorMap: { [key: string]: string } = {
-    'sprint': 'text-teal-700',
-    'long_jump': 'text-indigo-700',
-    'high_jump': 'text-purple-700',
-    'ball_throw': 'text-amber-700',
-    'long_run': 'text-rose-700'
-  };
-  return colorMap[sportId] || 'text-gray-700';
-};
-
-const gradeRecords: GradeRecords = {
-  sprint: {
-    'ד': '14.2',
-    'ה': '13.8',
-    'ו': '13.5',
-    'ז': '13.1',
-    'ח': '12.8'
-  },
-  long_jump: {
-    'ד': '3.2',
-    'ה': '3.5',
-    'ו': '3.8',
-    'ז': '4.1',
-    'ח': '4.4'
-  }
-};
-
 export default function HomePage() {
   const [openGrade, setOpenGrade] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -122,6 +61,18 @@ export default function HomePage() {
   const navigateToClass = (gradeId: string, classId: string) => {
     navigate(`/class/${gradeId}/${classId}`);
   };
+
+  const handleSportClick = (sportId: string) => {
+    // בעתיד - ניווט לדף סטטיסטיקות של הספורט
+    console.log('Selected sport:', sportId);
+  };
+
+  // נתוני דמו למדידות אחרונות
+  const recentMeasurements = [
+    { studentName: 'דניאל כהן', className: 'ו2', result: '11.8', sport: 'ריצת 100 מטר' },
+    { studentName: 'מיכל לוי', className: 'ו2', result: '12.9', sport: 'ריצת 100 מטר' },
+    { studentName: 'יעל ברק', className: 'ו1', result: '13.1', sport: 'ריצת 100 מטר' }
+  ];
 
   return (
     <div className="space-y-6">
@@ -154,33 +105,15 @@ export default function HomePage() {
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
           {sportTypes.map(sport => (
             <div key={sport.id} className="flex flex-col">
-              {/* Sport Button */}
-              <button className={`w-full h-12 rounded-lg p-2 text-white transition-all ${getButtonColorClass(sport.id)}`}>
+              <button 
+                onClick={() => handleSportClick(sport.id)}
+                className={`w-full h-12 rounded-lg p-2 text-white transition-all ${getButtonColorClass(sport.id)}`}
+              >
                 <div className="flex items-center justify-center gap-2">
                   <span className="text-xl">{sport.icon}</span>
                   <span className="font-medium">{sport.name}</span>
                 </div>
               </button>
-
-              {/* Top Students Box */}
-              <div className={`mt-2 p-3 rounded-lg ${getBgColorClass(sport.id)} border border-opacity-50`}>
-                <div className="flex items-center gap-1 text-sm font-bold mb-2">
-                  <Medal size={14} className={getTextColorClass(sport.id)} />
-                  <span className={getTextColorClass(sport.id)}>מצטיינים:</span>
-                </div>
-                <div className="space-y-1">
-                  {['ד', 'ה', 'ו', 'ז', 'ח'].map(grade => (
-                    <div key={grade} className="text-xs flex items-start gap-1">
-                      <span className="font-bold inline-block min-w-6 text-center bg-white bg-opacity-50 rounded py-0.5">
-                        {grade}
-                      </span>
-                      <span className="text-gray-600">
-                        {topStudents[sport.id]?.[grade] || 'אין נתונים'}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
             </div>
           ))}
         </div>
@@ -247,15 +180,15 @@ export default function HomePage() {
       <div className="bg-white rounded-xl shadow p-6">
         <h3 className="text-lg font-bold text-gray-700 mb-4">מדידות אחרונות</h3>
         <div className="space-y-4">
-          {[1, 2, 3].map(i => (
+          {recentMeasurements.map((measurement, i) => (
             <div key={i} className="flex items-center justify-between p-2 border-b last:border-0">
               <div>
-                <div className="font-medium">תלמיד {i}</div>
-                <div className="text-sm text-gray-500">כיתה ו2</div>
+                <div className="font-medium">{measurement.studentName}</div>
+                <div className="text-sm text-gray-500">כיתה {measurement.className}</div>
               </div>
               <div className="text-right">
-                <div className="font-medium">13.2 שניות</div>
-                <div className="text-sm text-gray-500">ריצת 100 מטר</div>
+                <div className="font-medium">{measurement.result} שניות</div>
+                <div className="text-sm text-gray-500">{measurement.sport}</div>
               </div>
             </div>
           ))}
