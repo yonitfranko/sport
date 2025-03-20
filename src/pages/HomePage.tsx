@@ -1,6 +1,7 @@
 import { Star, Award, BarChart2, Upload, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import * as XLSX from 'xlsx';
 
 interface SportType {
   id: string;
@@ -14,6 +15,26 @@ interface Grade {
   id: string;
   name: string;
   classes: string[];
+}
+
+interface Measurement {
+  first: number;
+  second: number;
+  firstDate?: string;
+  secondDate?: string;
+}
+
+interface StudentMeasurements {
+  [key: string]: Measurement;
+}
+
+interface Student {
+  id: number;
+  name: string;
+  gender: 'male' | 'female';
+  measurements: StudentMeasurements;
+  grade: string;
+  class: string;
 }
 
 const sportTypes: SportType[] = [
@@ -45,12 +66,144 @@ const getButtonColorClass = (sportId: string) => {
 
 export default function HomePage() {
   const [openGrade, setOpenGrade] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
-      console.log('Selected file:', file.name);
+    setUploadError(null);
+    
+    if (!file) return;
+
+    // בדיקת סוג הקובץ
+    if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+      setUploadError('נא להעלות קובץ אקסל בלבד (.xlsx או .xls)');
+      return;
+    }
+
+    try {
+      const data = await file.arrayBuffer();
+      const workbook = XLSX.read(data);
+      
+      // בדיקה שיש לפחות גיליון אחד
+      if (workbook.SheetNames.length === 0) {
+        setUploadError('הקובץ ריק - לא נמצאו גליונות');
+        return;
+      }
+
+      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+      const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+      // בדיקה שיש נתונים בקובץ
+      if (jsonData.length === 0) {
+        setUploadError('לא נמצאו נתונים בקובץ');
+        return;
+      }
+
+      // וידוא שיש את כל העמודות הנדרשות
+      const requiredColumns = ['שם', 'מגדר', 'כיתה'];
+      const headers = Object.keys(jsonData[0] || {});
+      const missingColumns = requiredColumns.filter(col => !headers.includes(col));
+
+      if (missingColumns.length > 0) {
+        setUploadError(`חסרות העמודות הבאות: ${missingColumns.join(', ')}`);
+        return;
+      }
+
+      // המרת הנתונים למבנה הנכון
+      const students: Student[] = [];
+      let hasErrors = false;
+      const errors: string[] = [];
+
+      for (let i = 0; i < jsonData.length; i++) {
+        const row = jsonData[i] as any;
+        console.log('Processing row:', row); // DEBUG
+        
+        // בדיקת תקינות השדות
+        if (!row['שם']?.toString().trim()) {
+          errors.push(`שורה ${i + 1}: חסר שם תלמיד`);
+          hasErrors = true;
+          continue;
+        }
+
+        if (!row['כיתה']?.toString().trim()) {
+          errors.push(`שורה ${i + 1}: חסרה כיתה`);
+          hasErrors = true;
+          continue;
+        }
+
+        const gender = row['מגדר']?.toString().toLowerCase();
+        if (gender !== 'זכר' && gender !== 'נקבה') {
+          errors.push(`שורה ${i + 1}: מגדר חייב להיות 'זכר' או 'נקבה'`);
+          hasErrors = true;
+          continue;
+        }
+
+        const classInfo = row['כיתה'].toString().trim();
+        const grade = classInfo.charAt(0);
+        
+        // בדיקה שהכיתה תקינה
+        const validGrade = grades.find(g => g.id === grade);
+        if (!validGrade) {
+          errors.push(`שורה ${i + 1}: שכבה לא תקינה - ${grade}`);
+          hasErrors = true;
+          continue;
+        }
+
+        if (!validGrade.classes.includes(classInfo)) {
+          errors.push(`שורה ${i + 1}: כיתה לא תקינה - ${classInfo}`);
+          hasErrors = true;
+          continue;
+        }
+
+        const student: Student = {
+          id: i + 1,
+          name: row['שם'].toString().trim(),
+          gender: gender === 'זכר' ? 'male' : 'female',
+          class: classInfo,
+          grade: grade,
+          measurements: {}
+        };
+        
+        console.log('Adding student:', student); // DEBUG
+        students.push(student);
+      }
+
+      if (hasErrors) {
+        setUploadError(`נמצאו שגיאות בקובץ:\n${errors.join('\n')}`);
+        return;
+      }
+
+      // שמירת הנתונים ב-localStorage
+      localStorage.setItem('students', JSON.stringify(students));
+      console.log('Saved students:', students); // DEBUG
+      
+      alert(`${students.length} תלמידים נטענו בהצלחה!`);
+      
+      try {
+        // ניווט לכיתה הראשונה שנטענה
+        if (students.length > 0) {
+          const firstStudent = students[0];
+          if (firstStudent.grade && firstStudent.class) {
+            console.log('Navigating to:', `/class/${firstStudent.grade}/${firstStudent.class}`); // DEBUG
+            // שימוש ב-setTimeout כדי לתת ל-localStorage להתעדכן
+            setTimeout(() => {
+              navigate(`/class/${firstStudent.grade}/${firstStudent.class}`);
+            }, 100);
+          } else {
+            console.error('Missing grade or class information for navigation');
+          }
+        }
+      } catch (error) {
+        console.error('Navigation error:', error);
+      }
+
+      // ניקוי שדה הקובץ
+      event.target.value = '';
+
+    } catch (error) {
+      console.error('Error reading Excel file:', error);
+      setUploadError('שגיאה בקריאת הקובץ. אנא ודא שהקובץ תקין ומכיל את העמודות הנדרשות.');
     }
   };
 
@@ -81,21 +234,38 @@ export default function HomePage() {
       {/* Excel Upload Section */}
       <div className="bg-white rounded-xl shadow p-6">
         <h3 className="text-lg font-bold text-gray-700 mb-4">העלאת רשימת תלמידים</h3>
-        <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-6 bg-gray-50 hover:bg-gray-100 transition-colors">
-          <Upload className="w-12 h-12 text-gray-400 mb-4" />
-          <p className="text-gray-600 mb-2">גרור לכאן קובץ אקסל או</p>
-          <label className="relative">
-            <input
-              type="file"
-              accept=".xlsx,.xls"
-              onChange={handleFileUpload}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-            />
-            <span className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors cursor-pointer">
-              בחר קובץ
-            </span>
-          </label>
-          <p className="text-gray-500 text-sm mt-2">קבצי אקסל בלבד (.xlsx, .xls)</p>
+        <div className="space-y-4">
+          <div className="bg-blue-50 rounded-lg p-4">
+            <h4 className="font-medium text-blue-700 mb-2">מבנה הקובץ הנדרש:</h4>
+            <ul className="list-disc list-inside text-blue-600 space-y-1">
+              <li>עמודת 'שם' - שם התלמיד/ה</li>
+              <li>עמודת 'מגדר' - זכר/נקבה</li>
+              <li>עמודת 'כיתה' - למשל: ו2</li>
+            </ul>
+          </div>
+          
+          <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-6 bg-gray-50 hover:bg-gray-100 transition-colors">
+            <Upload className="w-12 h-12 text-gray-400 mb-4" />
+            <p className="text-gray-600 mb-2">גרור לכאן קובץ אקסל או</p>
+            <label className="relative">
+              <input
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={handleFileUpload}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              />
+              <span className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors cursor-pointer">
+                בחר קובץ
+              </span>
+            </label>
+            <p className="text-gray-500 text-sm mt-2">קבצי אקסל בלבד (.xlsx, .xls)</p>
+          </div>
+
+          {uploadError && (
+            <div className="bg-red-50 text-red-600 p-4 rounded-lg">
+              {uploadError}
+            </div>
+          )}
         </div>
       </div>
       
