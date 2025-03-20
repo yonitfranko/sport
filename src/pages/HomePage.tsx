@@ -1,18 +1,36 @@
 import { Medal, Star, Award, BarChart2, Upload, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
-// נתוני ענפי הספורט
-const sportTypes = [
+interface SportType {
+  id: string;
+  name: string;
+  icon: string;
+  unit: string;
+  color: string;
+}
+
+interface TopStudents {
+  [key: string]: {
+    [key: string]: string;
+  };
+}
+
+interface GradeRecords {
+  [key: string]: {
+    [key: string]: string;
+  };
+}
+
+const sportTypes: SportType[] = [
   { id: 'sprint', name: 'ספרינט', icon: '🏃', unit: 'שניות', color: 'teal' },
-  { id: 'long_jump', name: 'קפיצה לרוחק', icon: '↔️', unit: 'מטרים', color: 'indigo' },
+  { id: 'long_jump', name: 'קפיצה למרחק', icon: '↔️', unit: 'מטרים', color: 'indigo' },
   { id: 'high_jump', name: 'קפיצה לגובה', icon: '↕️', unit: 'מטרים', color: 'purple' },
   { id: 'ball_throw', name: 'זריקת כדור', icon: '🏐', unit: 'מטרים', color: 'amber' },
   { id: 'long_run', name: 'ריצה ארוכה', icon: '🏃‍♂️', unit: 'דקות', color: 'rose' }
 ];
 
-// נתוני מצטיינים לדוגמה
-const topStudents = {
+const topStudents: TopStudents = {
   'sprint': {
     'ד': 'רוני אלון - 12.5 שניות',
     'ה': 'מיכל לוי - 12.0 שניות',
@@ -22,7 +40,6 @@ const topStudents = {
   }
 };
 
-// נתוני כיתות לדוגמה
 const grades = [
   { id: 'ד', name: 'שכבה ד׳', classes: ['ד1', 'ד2', 'ד3', 'ד4'] },
   { id: 'ה', name: 'שכבה ה׳', classes: ['ה1', 'ה2', 'ה3'] },
@@ -31,7 +48,6 @@ const grades = [
   { id: 'ח', name: 'שכבה ח׳', classes: ['ח1', 'ח2', 'ח3', 'ח4'] }
 ];
 
-// פונקציית עזר לקבלת צבע הרקע
 const getButtonColorClass = (sportId: string) => {
   const colorMap: { [key: string]: string } = {
     'sprint': 'bg-teal-500 hover:bg-teal-600',
@@ -43,7 +59,6 @@ const getButtonColorClass = (sportId: string) => {
   return colorMap[sportId] || 'bg-gray-500 hover:bg-gray-600';
 };
 
-// פונקציית עזר לקבלת צבע הרקע של תיבת המצטיינים
 const getBgColorClass = (sportId: string) => {
   const colorMap: { [key: string]: string } = {
     'sprint': 'bg-teal-50',
@@ -55,7 +70,6 @@ const getBgColorClass = (sportId: string) => {
   return colorMap[sportId] || 'bg-gray-50';
 };
 
-// פונקציית עזר לקבלת צבע הטקסט
 const getTextColorClass = (sportId: string) => {
   const colorMap: { [key: string]: string } = {
     'sprint': 'text-teal-700',
@@ -67,6 +81,23 @@ const getTextColorClass = (sportId: string) => {
   return colorMap[sportId] || 'text-gray-700';
 };
 
+const gradeRecords: GradeRecords = {
+  sprint: {
+    'ד': '14.2',
+    'ה': '13.8',
+    'ו': '13.5',
+    'ז': '13.1',
+    'ח': '12.8'
+  },
+  long_jump: {
+    'ד': '3.2',
+    'ה': '3.5',
+    'ו': '3.8',
+    'ז': '4.1',
+    'ח': '4.4'
+  }
+};
+
 export default function HomePage() {
   const [openGrade, setOpenGrade] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -74,7 +105,6 @@ export default function HomePage() {
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      // בהמשך נוסיף כאן את הלוגיקה לטיפול בקובץ
       console.log('Selected file:', file.name);
     }
   };
@@ -204,6 +234,25 @@ export default function HomePage() {
             <BarChart2 size={20} />
             השוואת נתונים
           </button>
+        </div>
+      </div>
+
+      {/* מדידות אחרונות */}
+      <div className="bg-white rounded-xl shadow p-6">
+        <h3 className="text-lg font-bold text-gray-700 mb-4">מדידות אחרונות</h3>
+        <div className="space-y-4">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="flex items-center justify-between p-2 border-b last:border-0">
+              <div>
+                <div className="font-medium">תלמיד {i}</div>
+                <div className="text-sm text-gray-500">כיתה ו2</div>
+              </div>
+              <div className="text-right">
+                <div className="font-medium">13.2 שניות</div>
+                <div className="text-sm text-gray-500">ריצת 100 מטר</div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>

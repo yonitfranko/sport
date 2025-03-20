@@ -2,35 +2,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Users, Medal, TrendingUp, ClipboardList, ArrowRight, Save, X } from 'lucide-react';
 import { useState } from 'react';
 
-// נתוני ענפי הספורט - בהמשך נעביר למודול משותף
-const sportTypes = [
-  { id: 'sprint', name: 'ספרינט', icon: '🏃', unit: 'שניות', color: 'teal' },
-  { id: 'long_jump', name: 'קפיצה לרוחק', icon: '↔️', unit: 'מטרים', color: 'indigo' },
-  { id: 'high_jump', name: 'קפיצה לגובה', icon: '↕️', unit: 'מטרים', color: 'purple' },
-  { id: 'ball_throw', name: 'זריקת כדור', icon: '🏐', unit: 'מטרים', color: 'amber' },
-  { id: 'long_run', name: 'ריצה ארוכה', icon: '🏃‍♂️', unit: 'דקות', color: 'rose' }
-];
-
-// נתונים לדוגמה - בהמשך יגיעו מהשרת
-const demoStudents = [
-  { id: 1, name: 'יוסי כהן', gender: 'male', measurements: { sprint: { first: 13.2, second: 12.8 } } },
-  { id: 2, name: 'רונית לוי', gender: 'female', measurements: { sprint: { first: 13.5, second: 13.1 } } },
-  { id: 3, name: 'אבי מזרחי', gender: 'male', measurements: { sprint: { first: 12.9, second: 12.5 } } },
-  { id: 4, name: 'מיכל ברק', gender: 'female', measurements: { sprint: { first: 13.3, second: 12.9 } } },
-  // ... more students
-];
-
-const getButtonColorClass = (sportId: string) => {
-  const colorMap: { [key: string]: string } = {
-    'sprint': 'bg-teal-500 hover:bg-teal-600',
-    'long_jump': 'bg-indigo-500 hover:bg-indigo-600',
-    'high_jump': 'bg-purple-500 hover:bg-purple-600',
-    'ball_throw': 'bg-amber-500 hover:bg-amber-600',
-    'long_run': 'bg-rose-500 hover:bg-rose-600'
-  };
-  return colorMap[sportId] || 'bg-gray-500 hover:bg-gray-600';
-};
-
 interface Measurement {
   first: number;
   second: number;
@@ -48,6 +19,44 @@ interface Student {
   gender: 'male' | 'female';
   measurements: StudentMeasurements;
 }
+
+// Demo data with correct typing
+const demoStudents: Student[] = [
+  {
+    id: 1,
+    name: 'דניאל כהן',
+    gender: 'male' as const,
+    measurements: {
+      sprint: { first: 12.5, second: 11.8 }
+    }
+  },
+  {
+    id: 2,
+    name: 'מיכל לוי',
+    gender: 'female' as const,
+    measurements: {
+      sprint: { first: 13.2, second: 12.9 }
+    }
+  }
+];
+
+const sportTypes = [
+  { id: 'sprint', name: 'ריצת 100 מטר', unit: 'שניות' },
+  { id: 'long_run', name: 'ריצת 2000 מטר', unit: 'שניות' },
+  { id: 'long_jump', name: 'קפיצה למרחק', unit: 'מטרים' },
+  { id: 'high_jump', name: 'קפיצה לגובה', unit: 'מטרים' }
+];
+
+const getButtonColorClass = (sportId: string) => {
+  const colorMap: { [key: string]: string } = {
+    'sprint': 'bg-teal-500 hover:bg-teal-600',
+    'long_jump': 'bg-indigo-500 hover:bg-indigo-600',
+    'high_jump': 'bg-purple-500 hover:bg-purple-600',
+    'ball_throw': 'bg-amber-500 hover:bg-amber-600',
+    'long_run': 'bg-rose-500 hover:bg-rose-600'
+  };
+  return colorMap[sportId] || 'bg-gray-500 hover:bg-gray-600';
+};
 
 export default function ClassPage() {
   const { gradeId, classId } = useParams();
@@ -114,7 +123,6 @@ export default function ClassPage() {
 
   const startEditing = (student: Student) => {
     if (selectedSport) {
-      const measurements = student.measurements[selectedSport] || { first: 0, second: 0 };
       setEditingStudent(student.id);
     }
   };
@@ -152,11 +160,9 @@ export default function ClassPage() {
     setEditingStudent(null);
   };
 
-  // מציאת המצטיינים לפי מגדר וענף ספורט
   const getTopPerformers = (sportId: string) => {
     const filteredStudents = students.filter(s => s.measurements[sportId]?.first || s.measurements[sportId]?.second);
     
-    // פונקציה למציאת התוצאה הטובה ביותר של תלמיד
     const getBestResult = (student: Student) => {
       const measurements = student.measurements[sportId];
       if (!measurements) return Infinity;
@@ -164,11 +170,9 @@ export default function ClassPage() {
       const first = measurements.first || Infinity;
       const second = measurements.second || Infinity;
       
-      // בספרינט וריצה ארוכה - הנמוך יותר טוב יותר
       if (sportId === 'sprint' || sportId === 'long_run') {
         return Math.min(first, second);
       }
-      // בשאר הענפים - הגבוה יותר טוב יותר
       return Math.max(first, second);
     };
 
@@ -284,8 +288,7 @@ export default function ClassPage() {
                 }`}
               >
                 <div className="flex items-center justify-center gap-2">
-                  <span className="text-xl">{sport.icon}</span>
-                  <span className="font-medium">{sport.name}</span>
+                  <span className="text-xl">{sport.name}</span>
                 </div>
               </button>
             ))}
