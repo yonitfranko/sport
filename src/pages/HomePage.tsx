@@ -22,6 +22,12 @@ interface GradeRecords {
   };
 }
 
+interface Grade {
+  id: string;
+  name: string;
+  classes: string[];
+}
+
 const sportTypes: SportType[] = [
   { id: 'sprint', name: 'ספרינט', icon: '🏃', unit: 'שניות', color: 'teal' },
   { id: 'long_jump', name: 'קפיצה למרחק', icon: '↔️', unit: 'מטרים', color: 'indigo' },
@@ -40,7 +46,7 @@ const topStudents: TopStudents = {
   }
 };
 
-const grades = [
+const grades: Grade[] = [
   { id: 'ד', name: 'שכבה ד׳', classes: ['ד1', 'ד2', 'ד3', 'ד4'] },
   { id: 'ה', name: 'שכבה ה׳', classes: ['ה1', 'ה2', 'ה3'] },
   { id: 'ו', name: 'שכבה ו׳', classes: ['ו1', 'ו2', 'ו3', 'ו4'] },

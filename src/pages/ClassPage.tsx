@@ -121,9 +121,9 @@ export default function ClassPage() {
     navigate(-1);
   };
 
-  const startEditing = (student: Student) => {
+  const startEditing = (studentId: number) => {
     if (selectedSport) {
-      setEditingStudent(student.id);
+      setEditingStudent(studentId);
     }
   };
 
@@ -427,7 +427,7 @@ export default function ClassPage() {
                             </td>
                             <td className="text-center py-2 px-4">
                               <button
-                                onClick={() => startEditing(student)}
+                                onClick={() => startEditing(student.id)}
                                 className="text-sm text-indigo-600 hover:text-indigo-800"
                               >
                                 ערוך
