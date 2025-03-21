@@ -6,6 +6,7 @@ import * as XLSX from 'xlsx';
 interface SportType {
   id: string;
   name: string;
+  description: string;
   icon: string;
   unit: string;
   color: string;
@@ -38,11 +39,11 @@ interface Student {
 }
 
 const sportTypes: SportType[] = [
-  { id: 'sprint', name: 'ספרינט', icon: '🏃', unit: 'שניות', color: 'teal' },
-  { id: 'long_jump', name: 'קפיצה למרחק', icon: '↔️', unit: 'מטרים', color: 'indigo' },
-  { id: 'high_jump', name: 'קפיצה לגובה', icon: '↕️', unit: 'מטרים', color: 'purple' },
-  { id: 'ball_throw', name: 'זריקת כדור', icon: '🏐', unit: 'מטרים', color: 'amber' },
-  { id: 'long_run', name: 'ריצה ארוכה', icon: '🏃‍♂️', unit: 'דקות', color: 'rose' }
+  { id: 'sprint', name: 'ספרינט', description: '100 מטר', icon: '🏃', unit: 'שניות', color: 'teal' },
+  { id: 'long_jump', name: 'קפיצה למרחק', description: 'קפיצה למרחק', icon: '↔️', unit: 'מטרים', color: 'indigo' },
+  { id: 'high_jump', name: 'קפיצה לגובה', description: 'קפיצה לגובה', icon: '↕️', unit: 'מטרים', color: 'purple' },
+  { id: 'ball_throw', name: 'זריקת כדור', description: 'זריקת כדור', icon: '🏐', unit: 'מטרים', color: 'amber' },
+  { id: 'long_run', name: 'ריצה ארוכה', description: '2000 מטר', icon: '🏃‍♂️', unit: 'דקות', color: 'rose' }
 ];
 
 const grades: Grade[] = [
@@ -242,6 +243,7 @@ export default function HomePage() {
             >
               <div className="text-2xl mb-2">{sport.icon}</div>
               <div className="font-medium">{sport.name}</div>
+              <div className="text-sm opacity-90">{sport.description}</div>
             </button>
           ))}
         </div>
