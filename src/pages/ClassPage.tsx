@@ -1,13 +1,13 @@
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Users, Medal, TrendingUp, ClipboardList, Edit2, Check, X, Trash2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 
 interface Measurement {
-  first: number;
-  second: number;
-  firstDate?: string;
-  secondDate?: string;
+  first: number | null;
+  second: number | null;
+  firstDate?: string | null;
+  secondDate?: string | null;
 }
 
 interface StudentMeasurements {
@@ -23,11 +23,21 @@ interface Student {
   class: string;
 }
 
-const sportTypes = [
-  { id: 'sprint', name: 'ריצת 100 מטר', unit: 'שניות' },
-  { id: 'long_run', name: 'ריצת 2000 מטר', unit: 'שניות' },
-  { id: 'long_jump', name: 'קפיצה למרחק', unit: 'מטרים' },
-  { id: 'high_jump', name: 'קפיצה לגובה', unit: 'מטרים' }
+interface SportType {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  unit: string;
+  isLowerBetter: boolean;
+}
+
+const sportTypes: SportType[] = [
+  { id: 'sprint', name: 'ספרינט', description: '100 מטר', icon: '🏃', unit: 'שניות', isLowerBetter: true },
+  { id: 'long_jump', name: 'קפיצה למרחק', description: 'קפיצה למרחק', icon: '↔️', unit: 'מטרים', isLowerBetter: false },
+  { id: 'high_jump', name: 'קפיצה לגובה', description: 'קפיצה לגובה', icon: '↕️', unit: 'מטרים', isLowerBetter: false },
+  { id: 'ball_throw', name: 'זריקת כדור', description: 'זריקת כדור', icon: '🏐', unit: 'מטרים', isLowerBetter: false },
+  { id: 'long_run', name: 'ריצה ארוכה', description: '2000 מטר', icon: '🏃‍♂️', unit: 'דקות', isLowerBetter: true }
 ];
 
 const getButtonColorClass = (sportId: string) => {
@@ -41,10 +51,20 @@ const getButtonColorClass = (sportId: string) => {
   return colorMap[sportId] || 'bg-gray-500 hover:bg-gray-600';
 };
 
+const getCurrentDate = () => {
+  const today = new Date();
+  return today.toISOString().split('T')[0];
+};
+
 export default function ClassPage() {
   const { gradeId, classId } = useParams();
   const navigate = useNavigate();
-  const [selectedSport, setSelectedSport] = useState<string | null>(null);
+  const location = useLocation();
+  const [selectedSport, setSelectedSport] = useState<string | null>(() => {
+    // בדיקה אם הגענו מדף ספורט
+    const params = new URLSearchParams(location.search);
+    return params.get('sport');
+  });
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -52,6 +72,8 @@ export default function ClassPage() {
   const [newStudent, setNewStudent] = useState({ name: '', gender: 'male' as 'male' | 'female' });
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [genderFilter, setGenderFilter] = useState<'all' | 'male' | 'female'>('all');
+  const [firstMeasurementDate, setFirstMeasurementDate] = useState(getCurrentDate());
+  const [secondMeasurementDate, setSecondMeasurementDate] = useState(getCurrentDate());
 
   useEffect(() => {
     const loadStudents = () => {
@@ -147,21 +169,15 @@ export default function ClassPage() {
     )
   };
 
-  const getCurrentDate = () => {
-    const today = new Date();
-    return today.toISOString().split('T')[0];
-  };
-
   const handleMeasurementChange = (studentId: number, field: 'first' | 'second', value: string) => {
     if (!selectedSport) return;
 
-    const numValue = parseFloat(value);
-    if (isNaN(numValue)) return;
-
+    const numValue = value === '' ? null : parseFloat(value);
+    
     setStudents(prevStudents =>
       prevStudents.map(student => {
         if (student.id === studentId) {
-          const currentMeasurements = student.measurements[selectedSport] || { first: 0, second: 0 };
+          const currentMeasurements = student.measurements[selectedSport] || {};
           return {
             ...student,
             measurements: {
@@ -169,7 +185,7 @@ export default function ClassPage() {
               [selectedSport]: {
                 ...currentMeasurements,
                 [field]: numValue,
-                [`${field}Date`]: getCurrentDate()
+                [`${field}Date`]: numValue !== null ? (field === 'first' ? firstMeasurementDate : secondMeasurementDate) : null
               }
             }
           };
@@ -214,23 +230,29 @@ export default function ClassPage() {
   };
 
   const goBack = () => {
-    navigate(-1);
+    const params = new URLSearchParams(location.search);
+    const fromSport = params.get('sport');
+    if (fromSport) {
+      navigate(`/sport/${fromSport}`);
+    } else {
+      navigate(-1);
+    }
   };
 
   const getTopPerformers = (sportId: string) => {
+    const sport = sportTypes.find(s => s.id === sportId);
+    if (!sport) return { boys: [], girls: [] };
+
     const filteredStudents = students.filter(s => s.measurements[sportId]?.first || s.measurements[sportId]?.second);
     
     const getBestResult = (student: Student) => {
       const measurements = student.measurements[sportId];
-      if (!measurements) return Infinity;
+      if (!measurements) return sport.isLowerBetter ? Infinity : -Infinity;
       
-      const first = measurements.first || Infinity;
-      const second = measurements.second || Infinity;
+      const first = measurements.first || (sport.isLowerBetter ? Infinity : -Infinity);
+      const second = measurements.second || (sport.isLowerBetter ? Infinity : -Infinity);
       
-      if (sportId === 'sprint' || sportId === 'long_run') {
-        return Math.min(first, second);
-      }
-      return Math.max(first, second);
+      return sport.isLowerBetter ? Math.min(first, second) : Math.max(first, second);
     };
 
     const boys = filteredStudents
@@ -238,10 +260,7 @@ export default function ClassPage() {
       .sort((a, b) => {
         const aBest = getBestResult(a);
         const bBest = getBestResult(b);
-        if (sportId === 'sprint' || sportId === 'long_run') {
-          return aBest - bBest;
-        }
-        return bBest - aBest;
+        return sport.isLowerBetter ? aBest - bBest : bBest - aBest;
       })
       .slice(0, 2);
 
@@ -250,10 +269,7 @@ export default function ClassPage() {
       .sort((a, b) => {
         const aBest = getBestResult(a);
         const bBest = getBestResult(b);
-        if (sportId === 'sprint' || sportId === 'long_run') {
-          return aBest - bBest;
-        }
-        return bBest - aBest;
+        return sport.isLowerBetter ? aBest - bBest : bBest - aBest;
       })
       .slice(0, 2);
 
@@ -326,14 +342,6 @@ export default function ClassPage() {
       sortedStudents = sortedStudents.filter(s => s.gender === genderFilter);
     }
 
-    if (selectedSport) {
-      sortedStudents.sort((a, b) => {
-        const aValue = a.measurements[selectedSport]?.second || a.measurements[selectedSport]?.first || 0;
-        const bValue = b.measurements[selectedSport]?.second || b.measurements[selectedSport]?.first || 0;
-        return aValue - bValue;
-      });
-    }
-
     return sortedStudents;
   };
 
@@ -349,21 +357,21 @@ export default function ClassPage() {
         </button>
       </div>
 
-      {/* ענפי ספורט */}
-      <div className="mb-8">
-        <h3 className="text-xl font-semibold mb-4">בחר ענף ספורט</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {/* Sports Section */}
+      <div className="bg-white rounded-xl shadow p-6 mb-6">
+        <h3 className="text-lg font-bold text-gray-700 mb-4">ענפי ספורט</h3>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           {sportTypes.map(sport => (
             <button
               key={sport.id}
               onClick={() => setSelectedSport(sport.id)}
-              className={`p-4 rounded-lg text-white ${
-                selectedSport === sport.id
-                  ? getButtonColorClass(sport.id)
-                  : 'bg-gray-400 hover:bg-gray-500'
+              className={`${getButtonColorClass(sport.id)} rounded-lg p-4 text-white text-center transition-all ${
+                selectedSport === sport.id ? 'ring-4 ring-offset-2' : ''
               }`}
             >
-              {sport.name}
+              <div className="text-2xl mb-2">{sport.icon}</div>
+              <div className="font-medium">{sport.name}</div>
+              <div className="text-sm opacity-90">{sport.description}</div>
             </button>
           ))}
         </div>
@@ -418,9 +426,16 @@ export default function ClassPage() {
       ) : (
         <>
           {/* טבלת תלמידים ומדידות */}
-          <div className="mb-8">
+          <div className="bg-white rounded-xl shadow p-6 mb-8">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-semibold">תלמידי הכיתה</h3>
+              <div>
+                <h3 className="text-xl font-semibold">תלמידי הכיתה</h3>
+                {selectedSport && (
+                  <div className="text-gray-600 mt-1">
+                    {sportTypes.find(s => s.id === selectedSport)?.name} - {sportTypes.find(s => s.id === selectedSport)?.description}
+                  </div>
+                )}
+              </div>
               <div className="flex gap-4">
                 <button
                   onClick={exportToExcel}
@@ -439,6 +454,7 @@ export default function ClassPage() {
                 </select>
               </div>
             </div>
+
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
@@ -447,8 +463,28 @@ export default function ClassPage() {
                     <th className="text-center py-3 px-4 font-medium text-gray-500">מגדר</th>
                     {selectedSport && (
                       <>
-                        <th className="text-center py-3 px-4 font-medium text-gray-500">מדידה ראשונה</th>
-                        <th className="text-center py-3 px-4 font-medium text-gray-500">מדידה שניה</th>
+                        <th className="text-center py-3 px-4 font-medium text-gray-500">
+                          <div>מדידה ראשונה</div>
+                          <div className="text-sm font-normal mt-1">
+                            <input
+                              type="date"
+                              value={firstMeasurementDate}
+                              onChange={(e) => setFirstMeasurementDate(e.target.value)}
+                              className="border rounded px-2 py-1 text-sm"
+                            />
+                          </div>
+                        </th>
+                        <th className="text-center py-3 px-4 font-medium text-gray-500">
+                          <div>מדידה שניה</div>
+                          <div className="text-sm font-normal mt-1">
+                            <input
+                              type="date"
+                              value={secondMeasurementDate}
+                              onChange={(e) => setSecondMeasurementDate(e.target.value)}
+                              className="border rounded px-2 py-1 text-sm"
+                            />
+                          </div>
+                        </th>
                         <th className="text-center py-3 px-4 font-medium text-gray-500">שיפור</th>
                       </>
                     )}
@@ -456,178 +492,127 @@ export default function ClassPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {getSortedStudents().map(student => (
-                    <tr key={student.id} className="border-b last:border-0 hover:bg-gray-50">
-                      <td className="py-3 px-4">
-                        {editingStudent?.id === student.id ? (
-                          <input
-                            type="text"
-                            value={editingStudent.name}
-                            onChange={(e) => setEditingStudent({ ...editingStudent, name: e.target.value })}
-                            className="border rounded px-2 py-1 w-full"
-                          />
-                        ) : (
-                          student.name
-                        )}
-                      </td>
-                      <td className="text-center py-3 px-4">
-                        {editingStudent?.id === student.id ? (
-                          <select
-                            value={editingStudent.gender}
-                            onChange={(e) => setEditingStudent({ ...editingStudent, gender: e.target.value as 'male' | 'female' })}
-                            className="border rounded px-2 py-1"
-                          >
-                            <option value="male">זכר</option>
-                            <option value="female">נקבה</option>
-                          </select>
-                        ) : (
-                          <span className={student.gender === 'male' ? 'text-blue-600' : 'text-pink-600'}>
-                            {student.gender === 'male' ? '👦' : '👧'}
-                          </span>
-                        )}
-                      </td>
-                      {selectedSport && (
-                        <>
-                          <td className="text-center py-3 px-4">
-                            <div className="flex flex-col items-center gap-1">
-                              <div className="flex items-center gap-1">
-                                <input
-                                  type="number"
-                                  step="0.1"
-                                  value={student.measurements[selectedSport]?.first || ''}
-                                  onChange={(e) => handleMeasurementChange(student.id, 'first', e.target.value)}
-                                  placeholder="-"
-                                  className={`w-20 text-center border rounded px-2 py-1 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
-                                    student.measurements[selectedSport]?.first && student.measurements[selectedSport]?.second && 
-                                    ((selectedSport === 'sprint' || selectedSport === 'long_run')
-                                      ? student.measurements[selectedSport].first < student.measurements[selectedSport].second
-                                      : student.measurements[selectedSport].first > student.measurements[selectedSport].second)
-                                      ? 'bg-green-50 border-green-200'
-                                      : ''
-                                  }`}
-                                />
-                                <span className="text-sm text-gray-500">{sportTypes.find(s => s.id === selectedSport)?.unit}</span>
-                              </div>
-                              {student.measurements[selectedSport]?.firstDate && (
-                                <span className="text-xs text-gray-500">{student.measurements[selectedSport].firstDate}</span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="text-center py-3 px-4">
-                            <div className="flex flex-col items-center gap-1">
-                              <div className="flex items-center gap-1">
-                                <input
-                                  type="number"
-                                  step="0.1"
-                                  value={student.measurements[selectedSport]?.second || ''}
-                                  onChange={(e) => handleMeasurementChange(student.id, 'second', e.target.value)}
-                                  placeholder="-"
-                                  className={`w-20 text-center border rounded px-2 py-1 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
-                                    student.measurements[selectedSport]?.first && student.measurements[selectedSport]?.second && 
-                                    ((selectedSport === 'sprint' || selectedSport === 'long_run')
-                                      ? student.measurements[selectedSport].second < student.measurements[selectedSport].first
-                                      : student.measurements[selectedSport].second > student.measurements[selectedSport].first)
-                                      ? 'bg-green-50 border-green-200'
-                                      : ''
-                                  }`}
-                                />
-                                <span className="text-sm text-gray-500">{sportTypes.find(s => s.id === selectedSport)?.unit}</span>
-                              </div>
-                              {student.measurements[selectedSport]?.secondDate && (
-                                <span className="text-xs text-gray-500">{student.measurements[selectedSport].secondDate}</span>
-                              )}
-                            </div>
-                          </td>
-                          <td className={`text-center py-3 px-4 ${
-                            student.measurements[selectedSport]?.first && student.measurements[selectedSport]?.second ? 
-                              `${(((student.measurements[selectedSport].second - student.measurements[selectedSport].first) / student.measurements[selectedSport].first) * 100).toFixed(1)}%`
-                              : ''
-                          }`}>
-                            {student.measurements[selectedSport]?.first && student.measurements[selectedSport]?.second ? 
-                              `${(((student.measurements[selectedSport].second - student.measurements[selectedSport].first) / student.measurements[selectedSport].first) * 100).toFixed(1)}%`
-                              : '-'}
-                          </td>
-                        </>
-                      )}
-                      <td className="text-center py-3 px-4">
-                        <div className="flex items-center justify-center gap-2">
+                  {getSortedStudents().map(student => {
+                    const measurements: Measurement = selectedSport ? (student.measurements[selectedSport] || { first: null, second: null, firstDate: null, secondDate: null }) : { first: null, second: null, firstDate: null, secondDate: null };
+                    const sport = sportTypes.find(s => s.id === selectedSport);
+                    const isBetterFirst = sport?.isLowerBetter
+                      ? (measurements.first !== null && measurements.second !== null && measurements.first < measurements.second)
+                      : (measurements.first !== null && measurements.second !== null && measurements.first > measurements.second);
+                    const isBetterSecond = sport?.isLowerBetter
+                      ? (measurements.first !== null && measurements.second !== null && measurements.second < measurements.first)
+                      : (measurements.first !== null && measurements.second !== null && measurements.second > measurements.first);
+
+                    return (
+                      <tr key={student.id} className="border-b last:border-0 hover:bg-gray-50">
+                        <td className="py-3 px-4">
                           {editingStudent?.id === student.id ? (
-                            <>
-                              <button
-                                onClick={saveEditedStudent}
-                                className="p-1 text-green-600 hover:text-green-800"
-                              >
-                                <Check size={20} />
-                              </button>
-                              <button
-                                onClick={() => setEditingStudent(null)}
-                                className="p-1 text-red-600 hover:text-red-800"
-                              >
-                                <X size={20} />
-                              </button>
-                            </>
+                            <input
+                              type="text"
+                              value={editingStudent.name}
+                              onChange={(e) => setEditingStudent({ ...editingStudent, name: e.target.value })}
+                              className="border rounded px-2 py-1 w-full"
+                            />
                           ) : (
-                            <>
-                              <button
-                                onClick={() => handleEditStudent(student)}
-                                className="p-1 text-blue-600 hover:text-blue-800"
-                              >
-                                <Edit2 size={20} />
-                              </button>
-                              <button
-                                onClick={() => deleteStudent(student.id)}
-                                className="p-1 text-red-600 hover:text-red-800"
-                              >
-                                <Trash2 size={20} />
-                              </button>
-                            </>
+                            student.name
                           )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                        <td className="text-center py-3 px-4">
+                          {editingStudent?.id === student.id ? (
+                            <select
+                              value={editingStudent.gender}
+                              onChange={(e) => setEditingStudent({ ...editingStudent, gender: e.target.value as 'male' | 'female' })}
+                              className="border rounded px-2 py-1"
+                            >
+                              <option value="male">זכר</option>
+                              <option value="female">נקבה</option>
+                            </select>
+                          ) : (
+                            <span className={student.gender === 'male' ? 'text-blue-600' : 'text-pink-600'}>
+                              {student.gender === 'male' ? '👦' : '👧'}
+                            </span>
+                          )}
+                        </td>
+                        {selectedSport && (
+                          <>
+                            <td className="text-center py-3 px-4">
+                              <input
+                                type="number"
+                                step="0.01"
+                                value={measurements.first ?? ''}
+                                onChange={(e) => handleMeasurementChange(student.id, 'first', e.target.value)}
+                                className={`w-24 text-center border rounded p-1 ${isBetterFirst ? 'bg-green-50 border-green-200' : ''}`}
+                                placeholder="הזן תוצאה"
+                              />
+                            </td>
+                            <td className="text-center py-3 px-4">
+                              <input
+                                type="number"
+                                step="0.01"
+                                value={measurements.second ?? ''}
+                                onChange={(e) => handleMeasurementChange(student.id, 'second', e.target.value)}
+                                className={`w-24 text-center border rounded p-1 ${isBetterSecond ? 'bg-green-50 border-green-200' : ''}`}
+                                placeholder="הזן תוצאה"
+                              />
+                            </td>
+                            <td className="text-center py-3 px-4">
+                              {measurements.first !== null && measurements.second !== null && (
+                                <span className={
+                                  ((measurements.second - measurements.first) / measurements.first) * 100 > 0
+                                    ? 'text-green-600'
+                                    : 'text-red-600'
+                                }>
+                                  {(((measurements.second - measurements.first) / measurements.first) * 100).toFixed(1)}%
+                                </span>
+                              )}
+                            </td>
+                          </>
+                        )}
+                        <td className="text-center py-3 px-4">
+                          <div className="flex items-center justify-center gap-2">
+                            {editingStudent?.id === student.id ? (
+                              <>
+                                <button
+                                  onClick={saveEditedStudent}
+                                  className="p-1 text-green-600 hover:text-green-800"
+                                >
+                                  <Check size={20} />
+                                </button>
+                                <button
+                                  onClick={() => setEditingStudent(null)}
+                                  className="p-1 text-red-600 hover:text-red-800"
+                                >
+                                  <X size={20} />
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <button
+                                  onClick={() => handleEditStudent(student)}
+                                  className="p-1 text-blue-600 hover:text-blue-800"
+                                >
+                                  <Edit2 size={20} />
+                                </button>
+                                <button
+                                  onClick={() => deleteStudent(student.id)}
+                                  className="p-1 text-red-600 hover:text-red-800"
+                                >
+                                  <Trash2 size={20} />
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
           </div>
 
-          {/* סטטיסטיקות */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-8">
-            <div className="bg-white p-6 rounded-lg shadow">
-              <div className="flex items-center justify-between">
-                <div className="text-gray-500">מספר תלמידים</div>
-                <Users className="h-6 w-6 text-blue-500" />
-              </div>
-              <div className="text-2xl font-bold mt-2">{stats.totalStudents}</div>
-            </div>
-            <div className="bg-white p-6 rounded-lg shadow">
-              <div className="flex items-center justify-between">
-                <div className="text-gray-500">מצטיינים</div>
-                <Medal className="h-6 w-6 text-yellow-500" />
-              </div>
-              <div className="text-2xl font-bold mt-2">{stats.topPerformers}</div>
-            </div>
-            <div className="bg-white p-6 rounded-lg shadow">
-              <div className="flex items-center justify-between">
-                <div className="text-gray-500">שיפור חודשי</div>
-                <TrendingUp className="h-6 w-6 text-green-500" />
-              </div>
-              <div className="text-2xl font-bold mt-2">
-                {stats.monthlyImprovement ? `${stats.monthlyImprovement.toFixed(1)}%` : '0%'}
-              </div>
-            </div>
-            <div className="bg-white p-6 rounded-lg shadow">
-              <div className="flex items-center justify-between">
-                <div className="text-gray-500">מדידות החודש</div>
-                <ClipboardList className="h-6 w-6 text-purple-500" />
-              </div>
-              <div className="text-2xl font-bold mt-2">{stats.monthlyMeasurements}</div>
-            </div>
-          </div>
-
           {/* מצטיינים */}
           {selectedSport && (
-            <div className="mt-8">
+            <div className="bg-white rounded-xl shadow p-6 mb-8">
               <h3 className="text-xl font-semibold mb-4">מצטיינים בענף {sportTypes.find(s => s.id === selectedSport)?.name}</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-blue-50 rounded-lg p-4">
@@ -695,6 +680,40 @@ export default function ClassPage() {
               </div>
             </div>
           )}
+
+          {/* סטטיסטיקות */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="bg-white p-6 rounded-lg shadow">
+              <div className="flex items-center justify-between">
+                <div className="text-gray-500">מספר תלמידים</div>
+                <Users className="h-6 w-6 text-blue-500" />
+              </div>
+              <div className="text-2xl font-bold mt-2">{stats.totalStudents}</div>
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow">
+              <div className="flex items-center justify-between">
+                <div className="text-gray-500">מצטיינים</div>
+                <Medal className="h-6 w-6 text-yellow-500" />
+              </div>
+              <div className="text-2xl font-bold mt-2">{stats.topPerformers}</div>
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow">
+              <div className="flex items-center justify-between">
+                <div className="text-gray-500">שיפור חודשי</div>
+                <TrendingUp className="h-6 w-6 text-green-500" />
+              </div>
+              <div className="text-2xl font-bold mt-2">
+                {stats.monthlyImprovement ? `${stats.monthlyImprovement.toFixed(1)}%` : '0%'}
+              </div>
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow">
+              <div className="flex items-center justify-between">
+                <div className="text-gray-500">מדידות החודש</div>
+                <ClipboardList className="h-6 w-6 text-purple-500" />
+              </div>
+              <div className="text-2xl font-bold mt-2">{stats.monthlyMeasurements}</div>
+            </div>
+          </div>
         </>
       )}
     </div>
