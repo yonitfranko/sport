@@ -7,6 +7,7 @@ import StatisticsPage from './pages/StatisticsPage';
 import AchievementsPage from './pages/AchievementsPage';
 import SettingsPage from './pages/SettingsPage';
 import ClassPage from './pages/ClassPage';
+import SportPage from './pages/SportPage';
 
 export default function App() {
   return (
@@ -48,6 +49,7 @@ export default function App() {
             <Route path="/achievements" element={<AchievementsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/class/:gradeId/:classId" element={<ClassPage />} />
+            <Route path="/sport/:sportId" element={<SportPage />} />
             {/* Fallback route for invalid paths */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

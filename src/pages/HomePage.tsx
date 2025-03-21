@@ -216,8 +216,7 @@ export default function HomePage() {
   };
 
   const handleSportClick = (sportId: string) => {
-    // בעתיד - ניווט לדף סטטיסטיקות של הספורט
-    console.log('Selected sport:', sportId);
+    navigate(`/sport/${sportId}`);
   };
 
   // נתוני דמו למדידות אחרונות
