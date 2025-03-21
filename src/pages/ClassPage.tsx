@@ -495,12 +495,17 @@ export default function ClassPage() {
                   {getSortedStudents().map(student => {
                     const measurements: Measurement = selectedSport ? (student.measurements[selectedSport] || { first: null, second: null, firstDate: null, secondDate: null }) : { first: null, second: null, firstDate: null, secondDate: null };
                     const sport = sportTypes.find(s => s.id === selectedSport);
-                    const isBetterFirst = sport?.isLowerBetter
-                      ? (measurements.first !== null && measurements.second !== null && measurements.first < measurements.second)
-                      : (measurements.first !== null && measurements.second !== null && measurements.first > measurements.second);
-                    const isBetterSecond = sport?.isLowerBetter
-                      ? (measurements.first !== null && measurements.second !== null && measurements.second < measurements.first)
-                      : (measurements.first !== null && measurements.second !== null && measurements.second > measurements.first);
+                    
+                    // בדיקת תקינות המדידות
+                    const hasValidMeasurements = measurements.first !== null && measurements.second !== null;
+                    
+                    const isFirstBetter = hasValidMeasurements && sport?.isLowerBetter !== undefined
+                      ? (sport.isLowerBetter ? (measurements.first as number) < (measurements.second as number) : (measurements.first as number) > (measurements.second as number))
+                      : false;
+                      
+                    const isSecondBetter = hasValidMeasurements && sport?.isLowerBetter !== undefined
+                      ? (sport.isLowerBetter ? (measurements.second as number) < (measurements.first as number) : (measurements.second as number) > (measurements.first as number))
+                      : false;
 
                     return (
                       <tr key={student.id} className="border-b last:border-0 hover:bg-gray-50">
@@ -540,7 +545,7 @@ export default function ClassPage() {
                                 step="0.01"
                                 value={measurements.first ?? ''}
                                 onChange={(e) => handleMeasurementChange(student.id, 'first', e.target.value)}
-                                className={`w-24 text-center border rounded p-1 ${isBetterFirst ? 'bg-green-50 border-green-200' : ''}`}
+                                className={`w-24 text-center border rounded p-1 ${isFirstBetter ? 'bg-green-50 border-green-200' : ''}`}
                                 placeholder="הזן תוצאה"
                               />
                             </td>
@@ -550,18 +555,18 @@ export default function ClassPage() {
                                 step="0.01"
                                 value={measurements.second ?? ''}
                                 onChange={(e) => handleMeasurementChange(student.id, 'second', e.target.value)}
-                                className={`w-24 text-center border rounded p-1 ${isBetterSecond ? 'bg-green-50 border-green-200' : ''}`}
+                                className={`w-24 text-center border rounded p-1 ${isSecondBetter ? 'bg-green-50 border-green-200' : ''}`}
                                 placeholder="הזן תוצאה"
                               />
                             </td>
                             <td className="text-center py-3 px-4">
-                              {measurements.first !== null && measurements.second !== null && (
+                              {hasValidMeasurements && (
                                 <span className={
-                                  ((measurements.second - measurements.first) / measurements.first) * 100 > 0
+                                  (((measurements.second as number) - (measurements.first as number)) / (measurements.first as number)) * 100 > 0
                                     ? 'text-green-600'
                                     : 'text-red-600'
                                 }>
-                                  {(((measurements.second - measurements.first) / measurements.first) * 100).toFixed(1)}%
+                                  {(((measurements.second as number) - (measurements.first as number)) / (measurements.first as number) * 100).toFixed(1)}%
                                 </span>
                               )}
                             </td>
@@ -623,9 +628,10 @@ export default function ClassPage() {
                       const bestResult = (selectedSport === 'sprint' || selectedSport === 'long_run')
                         ? Math.min(measurements.first || Infinity, measurements.second || Infinity)
                         : Math.max(measurements.first || -Infinity, measurements.second || -Infinity);
-                      const isFirstBetter = (selectedSport === 'sprint' || selectedSport === 'long_run')
-                        ? measurements.first < measurements.second
-                        : measurements.first > measurements.second;
+                      const isFirstBetter = measurements.first !== null && measurements.second !== null && 
+                        ((selectedSport === 'sprint' || selectedSport === 'long_run')
+                          ? measurements.first < measurements.second
+                          : measurements.first > measurements.second);
                       const bestDate = isFirstBetter ? measurements.firstDate : measurements.secondDate;
                       
                       return (
@@ -654,9 +660,10 @@ export default function ClassPage() {
                       const bestResult = (selectedSport === 'sprint' || selectedSport === 'long_run')
                         ? Math.min(measurements.first || Infinity, measurements.second || Infinity)
                         : Math.max(measurements.first || -Infinity, measurements.second || -Infinity);
-                      const isFirstBetter = (selectedSport === 'sprint' || selectedSport === 'long_run')
-                        ? measurements.first < measurements.second
-                        : measurements.first > measurements.second;
+                      const isFirstBetter = measurements.first !== null && measurements.second !== null && 
+                        ((selectedSport === 'sprint' || selectedSport === 'long_run')
+                          ? measurements.first < measurements.second
+                          : measurements.first > measurements.second);
                       const bestDate = isFirstBetter ? measurements.firstDate : measurements.secondDate;
                       
                       return (
