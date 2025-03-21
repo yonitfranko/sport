@@ -1,6 +1,6 @@
 import { useParams } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { Trophy, ArrowLeft } from 'lucide-react';
+import { Trophy, ArrowLeft, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface TopStudent {
@@ -21,23 +21,32 @@ export default function SportPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [topPerformers, setTopPerformers] = useState<GradeTopStudents[]>([]);
+  const [openGrade, setOpenGrade] = useState<string | null>(null);
 
   // מיפוי ענפי הספורט
   const sportTypes = {
-    'sprint': { name: 'ספרינט', icon: '🏃', unit: 'שניות', isLowerBetter: true },
-    'long_jump': { name: 'קפיצה למרחק', icon: '↔️', unit: 'מטרים', isLowerBetter: false },
-    'high_jump': { name: 'קפיצה לגובה', icon: '↕️', unit: 'מטרים', isLowerBetter: false },
-    'ball_throw': { name: 'זריקת כדור', icon: '🏐', unit: 'מטרים', isLowerBetter: false },
-    'long_run': { name: 'ריצה ארוכה', icon: '🏃‍♂️', unit: 'דקות', isLowerBetter: true }
+    'sprint': { name: 'ספרינט', description: '100 מטר', icon: '🏃', unit: 'שניות', isLowerBetter: true },
+    'long_jump': { name: 'קפיצה למרחק', description: 'קפיצה למרחק', icon: '↔️', unit: 'מטרים', isLowerBetter: false },
+    'high_jump': { name: 'קפיצה לגובה', description: 'קפיצה לגובה', icon: '↕️', unit: 'מטרים', isLowerBetter: false },
+    'ball_throw': { name: 'זריקת כדור', description: 'זריקת כדור', icon: '🏐', unit: 'מטרים', isLowerBetter: false },
+    'long_run': { name: 'ריצה ארוכה', description: '2000 מטר', icon: '🏃‍♂️', unit: 'דקות', isLowerBetter: true }
   };
 
   const grades = [
-    { id: 'ד', name: 'שכבה ד׳' },
-    { id: 'ה', name: 'שכבה ה׳' },
-    { id: 'ו', name: 'שכבה ו׳' },
-    { id: 'ז', name: 'שכבה ז׳' },
-    { id: 'ח', name: 'שכבה ח׳' }
+    { id: 'ד', name: 'שכבה ד׳', classes: ['ד1', 'ד2', 'ד3', 'ד4'] },
+    { id: 'ה', name: 'שכבה ה׳', classes: ['ה1', 'ה2', 'ה3'] },
+    { id: 'ו', name: 'שכבה ו׳', classes: ['ו1', 'ו2', 'ו3', 'ו4'] },
+    { id: 'ז', name: 'שכבה ז׳', classes: ['ז1', 'ז2', 'ז3'] },
+    { id: 'ח', name: 'שכבה ח׳', classes: ['ח1', 'ח2', 'ח3', 'ח4'] }
   ];
+
+  const toggleGrade = (gradeId: string) => {
+    setOpenGrade(openGrade === gradeId ? null : gradeId);
+  };
+
+  const navigateToClass = (gradeId: string, classId: string) => {
+    navigate(`/class/${gradeId}/${classId}?sport=${sportId}`);
+  };
 
   useEffect(() => {
     if (!sportId || !sportTypes[sportId as keyof typeof sportTypes]) {
@@ -126,7 +135,10 @@ export default function SportPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <span className="text-3xl">{sport.icon}</span>
-          <h1 className="text-2xl font-bold">{sport.name}</h1>
+          <div>
+            <h1 className="text-2xl font-bold">{sport.name}</h1>
+            <div className="text-gray-600">{sport.description}</div>
+          </div>
         </div>
         <button
           onClick={() => navigate('/')}
@@ -139,7 +151,7 @@ export default function SportPage() {
 
       {/* רשימת המצטיינים לפי שכבות */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-        {topPerformers.map((gradeData) => (
+        {topPerformers.map(gradeData => (
           <div
             key={gradeData.gradeId}
             className="bg-white rounded-xl shadow-lg p-6 transform hover:scale-105 transition-transform"
@@ -181,6 +193,41 @@ export default function SportPage() {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* רשימת השכבות להזנת מדידות */}
+      <div className="bg-white rounded-xl shadow p-6">
+        <h2 className="text-xl font-bold text-gray-800 mb-4">הזנת מדידות חדשות</h2>
+        <div className="space-y-4">
+          {grades.map(grade => (
+            <div key={grade.id} className="border rounded-lg overflow-hidden">
+              <button
+                onClick={() => toggleGrade(grade.id)}
+                className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100"
+              >
+                <span className="font-medium">{grade.name}</span>
+                <ChevronDown
+                  className={`transform transition-transform ${
+                    openGrade === grade.id ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
+              {openGrade === grade.id && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4">
+                  {grade.classes.map(classId => (
+                    <button
+                      key={classId}
+                      onClick={() => navigateToClass(grade.id, classId)}
+                      className="bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg p-3 text-center transition-colors"
+                    >
+                      כיתה {classId}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
