@@ -99,23 +99,6 @@ export default function ClassPage() {
     loadStudents();
   }, [gradeId, classId]);
 
-  // אם יש שגיאה בטעינה, מציג הודעת שגיאה
-  if (error) {
-    return (
-      <div className="p-6">
-        <div className="bg-red-50 text-red-600 p-4 rounded-lg mb-4">
-          {error}
-        </div>
-        <button
-          onClick={() => navigate('/')}
-          className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
-        >
-          חזרה לדף הבית
-        </button>
-      </div>
-    );
-  }
-
   // אם הדף בטעינה, מציג אנימציית טעינה
   if (loading) {
     return (
@@ -125,12 +108,12 @@ export default function ClassPage() {
     );
   }
 
-  // אם אין תלמידים בכיתה, מציג הודעה מתאימה
-  if (students.length === 0) {
+  // אם יש שגיאה בטעינה, מציג הודעת שגיאה
+  if (error) {
     return (
       <div className="p-6">
-        <div className="bg-yellow-50 text-yellow-600 p-4 rounded-lg mb-4">
-          לא נמצאו תלמידים בכיתה זו
+        <div className="bg-red-50 text-red-600 p-4 rounded-lg mb-4">
+          {error}
         </div>
         <button
           onClick={() => navigate('/')}
@@ -363,419 +346,288 @@ export default function ClassPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4">
+    <div className="p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold">כיתה {classId}</h2>
         <button
           onClick={goBack}
-          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600"
         >
-          <ArrowRight className="text-gray-600" size={24} />
+          חזרה
         </button>
-        <div className="flex items-center justify-between flex-1">
-          <h2 className="text-xl font-bold text-gray-700">כיתה {classId}</h2>
-          <span className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm font-medium">
-            שכבה {gradeId}
-          </span>
-        </div>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl shadow p-4">
-          <div className="flex items-center gap-3">
-            <div className="bg-blue-100 p-3 rounded-lg">
-              <Users className="text-blue-600" size={24} />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">תלמידים</p>
-              <p className="text-xl font-bold">{stats.totalStudents}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow p-4">
-          <div className="flex items-center gap-3">
-            <div className="bg-amber-100 p-3 rounded-lg">
-              <Medal className="text-amber-600" size={24} />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">מצטיינים</p>
-              <p className="text-xl font-bold">{stats.topPerformers}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow p-4">
-          <div className="flex items-center gap-3">
-            <div className="bg-green-100 p-3 rounded-lg">
-              <TrendingUp className="text-green-600" size={24} />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">שיפור חודשי</p>
-              <p className="text-xl font-bold">{stats.monthlyImprovement.toFixed(1)}%</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow p-4">
-          <div className="flex items-center gap-3">
-            <div className="bg-purple-100 p-3 rounded-lg">
-              <ClipboardList className="text-purple-600" size={24} />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">מדידות החודש</p>
-              <p className="text-xl font-bold">{stats.monthlyMeasurements}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Controls Bar */}
-      <div className="bg-white rounded-xl shadow p-4">
-        <div className="flex flex-wrap gap-4 items-center justify-between">
-          <div className="flex gap-4">
-            <select
-              value={sortBy || ''}
-              onChange={(e) => setSortBy(e.target.value as 'name' | 'measurements' | null)}
-              className="border rounded-lg px-3 py-2"
-            >
-              <option value="">מיין לפי...</option>
-              <option value="name">שם</option>
-              {selectedSport && <option value="measurements">תוצאות</option>}
-            </select>
-            {sortBy && (
-              <button
-                onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
-                className="flex items-center gap-2 px-3 py-2 border rounded-lg"
-              >
-                <SortAsc className={sortOrder === 'desc' ? 'transform rotate-180' : ''} />
-                {sortOrder === 'asc' ? 'עולה' : 'יורד'}
-              </button>
-            )}
-            <select
-              value={genderFilter}
-              onChange={(e) => setGenderFilter(e.target.value as 'all' | 'male' | 'female')}
-              className="border rounded-lg px-3 py-2"
-            >
-              <option value="all">כל המגדרים</option>
-              <option value="male">בנים</option>
-              <option value="female">בנות</option>
-            </select>
-          </div>
-          <div className="flex gap-4">
+      {/* ענפי ספורט */}
+      <div className="mb-8">
+        <h3 className="text-xl font-semibold mb-4">בחר ענף ספורט</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {sportTypes.map(sport => (
             <button
-              onClick={exportToExcel}
-              className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
+              key={sport.id}
+              onClick={() => setSelectedSport(sport.id)}
+              className={`p-4 rounded-lg text-white ${
+                selectedSport === sport.id
+                  ? getButtonColorClass(sport.id)
+                  : 'bg-gray-400 hover:bg-gray-500'
+              }`}
             >
-              <Download size={20} />
-              ייצא לאקסל
+              {sport.name}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* הוספת תלמיד */}
+      <div className="mb-8">
+        {!showAddStudent ? (
+          <button
+            onClick={() => setShowAddStudent(true)}
+            className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600"
+          >
+            הוסף תלמיד/ה
+          </button>
+        ) : (
+          <div className="flex gap-4 items-center">
+            <input
+              type="text"
+              value={newStudent.name}
+              onChange={(e) => setNewStudent({ ...newStudent, name: e.target.value })}
+              placeholder="שם התלמיד/ה"
+              className="border p-2 rounded-lg"
+            />
+            <select
+              value={newStudent.gender}
+              onChange={(e) => setNewStudent({ ...newStudent, gender: e.target.value as 'male' | 'female' })}
+              className="border p-2 rounded-lg"
+            >
+              <option value="male">זכר</option>
+              <option value="female">נקבה</option>
+            </select>
+            <button
+              onClick={addStudent}
+              className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600"
+            >
+              הוסף
             </button>
             <button
-              onClick={() => setShowAddStudent(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+              onClick={() => setShowAddStudent(false)}
+              className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600"
             >
-              הוסף תלמיד/ה
+              ביטול
             </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Sports Grid */}
-      <div className="bg-white rounded-xl shadow">
-        <div className="p-6">
-          <h3 className="text-lg font-bold text-gray-700 mb-4">ענפי ספורט</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            {sportTypes.map(sport => (
-              <button
-                key={sport.id}
-                onClick={() => {
-                  setSelectedSport(sport.id);
-                }}
-                className={`w-full h-12 rounded-lg p-2 text-white transition-all ${getButtonColorClass(sport.id)} ${
-                  selectedSport === sport.id ? 'ring-2 ring-offset-2' : ''
-                }`}
-              >
-                <div className="flex items-center justify-center gap-2">
-                  <span className="text-xl">{sport.name}</span>
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Measurements and Top Performers */}
-        {selectedSport && (
-          <div className="border-t">
-            <div className="p-6">
-              <div className="mb-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h4 className="text-lg font-medium text-gray-700">מדידות</h4>
-                  <button
-                    onClick={() => setShowAddStudent(true)}
-                    className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
-                  >
-                    הוסף תלמיד/ה
-                  </button>
-                </div>
-
-                {showAddStudent && (
-                  <div className="bg-gray-50 p-4 rounded-lg mb-4">
-                    <div className="flex gap-4 items-center">
-                      <input
-                        type="text"
-                        value={newStudent.name}
-                        onChange={(e) => setNewStudent(prev => ({ ...prev, name: e.target.value }))}
-                        placeholder="שם התלמיד/ה"
-                        className="flex-1 p-2 border rounded-lg"
-                      />
-                      <select
-                        value={newStudent.gender}
-                        onChange={(e) => setNewStudent(prev => ({ ...prev, gender: e.target.value as 'male' | 'female' }))}
-                        className="p-2 border rounded-lg"
-                      >
-                        <option value="male">זכר</option>
-                        <option value="female">נקבה</option>
-                      </select>
-                      <button
-                        onClick={addStudent}
-                        className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
-                      >
-                        הוסף
-                      </button>
-                      <button
-                        onClick={() => setShowAddStudent(false)}
-                        className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
-                      >
-                        ביטול
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="bg-gray-50 border-b">
-                        <th className="text-right py-3 px-4 font-medium text-gray-500">שם התלמיד/ה</th>
-                        <th className="text-center py-3 px-4 font-medium text-gray-500">מגדר</th>
-                        {selectedSport && (
-                          <>
-                            <th className="text-center py-3 px-4 font-medium text-gray-500">מדידה ראשונה</th>
-                            <th className="text-center py-3 px-4 font-medium text-gray-500">מדידה שניה</th>
-                            <th className="text-center py-3 px-4 font-medium text-gray-500">שיפור</th>
-                          </>
-                        )}
-                        <th className="text-center py-3 px-4 font-medium text-gray-500">פעולות</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {getSortedStudents().map(student => (
-                        <tr key={student.id} className="border-b last:border-0 hover:bg-gray-50">
-                          <td className="py-3 px-4">
-                            {editingStudent?.id === student.id ? (
-                              <input
-                                type="text"
-                                value={editingStudent.name}
-                                onChange={(e) => setEditingStudent({ ...editingStudent, name: e.target.value })}
-                                className="border rounded px-2 py-1 w-full"
-                              />
-                            ) : (
-                              student.name
-                            )}
-                          </td>
-                          <td className="text-center py-3 px-4">
-                            {editingStudent?.id === student.id ? (
-                              <select
-                                value={editingStudent.gender}
-                                onChange={(e) => setEditingStudent({ ...editingStudent, gender: e.target.value as 'male' | 'female' })}
-                                className="border rounded px-2 py-1"
-                              >
-                                <option value="male">זכר</option>
-                                <option value="female">נקבה</option>
-                              </select>
-                            ) : (
-                              <span className={student.gender === 'male' ? 'text-blue-600' : 'text-pink-600'}>
-                                {student.gender === 'male' ? '👦' : '👧'}
-                              </span>
-                            )}
-                          </td>
-                          {selectedSport && (
-                            <>
-                              <td className="text-center py-3 px-4">
-                                <div className="flex flex-col items-center gap-1">
-                                  <div className="flex items-center gap-1">
-                                    <input
-                                      type="number"
-                                      step="0.1"
-                                      value={student.measurements[selectedSport]?.first || ''}
-                                      onChange={(e) => handleMeasurementChange(student.id, 'first', e.target.value)}
-                                      placeholder="-"
-                                      className={`w-20 text-center border rounded px-2 py-1 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
-                                        student.measurements[selectedSport]?.first && student.measurements[selectedSport]?.second && 
-                                        ((selectedSport === 'sprint' || selectedSport === 'long_run')
-                                          ? student.measurements[selectedSport].first < student.measurements[selectedSport].second
-                                          : student.measurements[selectedSport].first > student.measurements[selectedSport].second)
-                                          ? 'bg-green-50 border-green-200'
-                                          : ''
-                                      }`}
-                                    />
-                                    <span className="text-sm text-gray-500">{sportTypes.find(s => s.id === selectedSport)?.unit}</span>
-                                  </div>
-                                  {student.measurements[selectedSport]?.firstDate && (
-                                    <span className="text-xs text-gray-500">{student.measurements[selectedSport].firstDate}</span>
-                                  )}
-                                </div>
-                              </td>
-                              <td className="text-center py-3 px-4">
-                                <div className="flex flex-col items-center gap-1">
-                                  <div className="flex items-center gap-1">
-                                    <input
-                                      type="number"
-                                      step="0.1"
-                                      value={student.measurements[selectedSport]?.second || ''}
-                                      onChange={(e) => handleMeasurementChange(student.id, 'second', e.target.value)}
-                                      placeholder="-"
-                                      className={`w-20 text-center border rounded px-2 py-1 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
-                                        student.measurements[selectedSport]?.first && student.measurements[selectedSport]?.second && 
-                                        ((selectedSport === 'sprint' || selectedSport === 'long_run')
-                                          ? student.measurements[selectedSport].second < student.measurements[selectedSport].first
-                                          : student.measurements[selectedSport].second > student.measurements[selectedSport].first)
-                                          ? 'bg-green-50 border-green-200'
-                                          : ''
-                                      }`}
-                                    />
-                                    <span className="text-sm text-gray-500">{sportTypes.find(s => s.id === selectedSport)?.unit}</span>
-                                  </div>
-                                  {student.measurements[selectedSport]?.secondDate && (
-                                    <span className="text-xs text-gray-500">{student.measurements[selectedSport].secondDate}</span>
-                                  )}
-                                </div>
-                              </td>
-                              <td className={`text-center py-3 px-4 ${
-                                student.measurements[selectedSport]?.first && student.measurements[selectedSport]?.second ? 
-                                  `${(((student.measurements[selectedSport].second - student.measurements[selectedSport].first) / student.measurements[selectedSport].first) * 100).toFixed(1)}%`
-                                  : ''
-                              }`}>
-                                {student.measurements[selectedSport]?.first && student.measurements[selectedSport]?.second ? 
-                                  `${(((student.measurements[selectedSport].second - student.measurements[selectedSport].first) / student.measurements[selectedSport].first) * 100).toFixed(1)}%`
-                                  : '-'}
-                              </td>
-                            </>
-                          )}
-                          <td className="text-center py-3 px-4">
-                            <div className="flex items-center justify-center gap-2">
-                              {editingStudent?.id === student.id ? (
-                                <>
-                                  <button
-                                    onClick={saveEditedStudent}
-                                    className="p-1 text-green-600 hover:text-green-800"
-                                  >
-                                    <Check size={20} />
-                                  </button>
-                                  <button
-                                    onClick={() => setEditingStudent(null)}
-                                    className="p-1 text-red-600 hover:text-red-800"
-                                  >
-                                    <X size={20} />
-                                  </button>
-                                </>
-                              ) : (
-                                <>
-                                  <button
-                                    onClick={() => handleEditStudent(student)}
-                                    className="p-1 text-blue-600 hover:text-blue-800"
-                                  >
-                                    <Edit2 size={20} />
-                                  </button>
-                                  <button
-                                    onClick={() => deleteStudent(student.id)}
-                                    className="p-1 text-red-600 hover:text-red-800"
-                                  >
-                                    <Trash2 size={20} />
-                                  </button>
-                                </>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              <div>
-                <h4 className="text-lg font-medium text-gray-700 mb-4">מצטיינים בתחום</h4>
-                <p className="text-sm text-gray-500 mb-4">* מוצגת התוצאה הטובה ביותר מבין שתי המדידות</p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-blue-50 rounded-lg p-4">
-                    <h5 className="font-medium text-blue-700 mb-2">בנים</h5>
-                    <div className="space-y-2">
-                      {getTopPerformers(selectedSport).boys.map(student => {
-                        const measurements = student.measurements[selectedSport];
-                        const bestResult = (selectedSport === 'sprint' || selectedSport === 'long_run')
-                          ? Math.min(measurements.first || Infinity, measurements.second || Infinity)
-                          : Math.max(measurements.first || -Infinity, measurements.second || -Infinity);
-                        const isFirstBetter = (selectedSport === 'sprint' || selectedSport === 'long_run')
-                          ? measurements.first < measurements.second
-                          : measurements.first > measurements.second;
-                        const bestDate = isFirstBetter ? measurements.firstDate : measurements.secondDate;
-                        
-                        return (
-                          <div key={student.id} className="flex items-center justify-between">
-                            <span className="text-gray-700">{student.name}</span>
-                            <div className="text-right">
-                              <span className="text-blue-600 font-medium block">
-                                {bestResult} {sportTypes.find(s => s.id === selectedSport)?.unit}
-                              </span>
-                              {bestDate && (
-                                <span className="text-xs text-gray-500 block">
-                                  {bestDate}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                  <div className="bg-pink-50 rounded-lg p-4">
-                    <h5 className="font-medium text-pink-700 mb-2">בנות</h5>
-                    <div className="space-y-2">
-                      {getTopPerformers(selectedSport).girls.map(student => {
-                        const measurements = student.measurements[selectedSport];
-                        const bestResult = (selectedSport === 'sprint' || selectedSport === 'long_run')
-                          ? Math.min(measurements.first || Infinity, measurements.second || Infinity)
-                          : Math.max(measurements.first || -Infinity, measurements.second || -Infinity);
-                        const isFirstBetter = (selectedSport === 'sprint' || selectedSport === 'long_run')
-                          ? measurements.first < measurements.second
-                          : measurements.first > measurements.second;
-                        const bestDate = isFirstBetter ? measurements.firstDate : measurements.secondDate;
-                        
-                        return (
-                          <div key={student.id} className="flex items-center justify-between">
-                            <span className="text-gray-700">{student.name}</span>
-                            <div className="text-right">
-                              <span className="text-pink-600 font-medium block">
-                                {bestResult} {sportTypes.find(s => s.id === selectedSport)?.unit}
-                              </span>
-                              {bestDate && (
-                                <span className="text-xs text-gray-500 block">
-                                  {bestDate}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
         )}
       </div>
+
+      {students.length === 0 ? (
+        <div className="bg-yellow-50 text-yellow-600 p-4 rounded-lg">
+          לא נמצאו תלמידים בכיתה זו
+        </div>
+      ) : (
+        <>
+          {/* טבלת תלמידים ומדידות */}
+          <div className="mb-8">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold">תלמידי הכיתה</h3>
+              <div className="flex gap-4">
+                <select
+                  value={genderFilter}
+                  onChange={(e) => setGenderFilter(e.target.value as 'all' | 'male' | 'female')}
+                  className="border p-2 rounded-lg"
+                >
+                  <option value="all">הכל</option>
+                  <option value="male">בנים</option>
+                  <option value="female">בנות</option>
+                </select>
+              </div>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-gray-50 border-b">
+                    <th className="text-right py-3 px-4 font-medium text-gray-500">שם התלמיד/ה</th>
+                    <th className="text-center py-3 px-4 font-medium text-gray-500">מגדר</th>
+                    {selectedSport && (
+                      <>
+                        <th className="text-center py-3 px-4 font-medium text-gray-500">מדידה ראשונה</th>
+                        <th className="text-center py-3 px-4 font-medium text-gray-500">מדידה שניה</th>
+                        <th className="text-center py-3 px-4 font-medium text-gray-500">שיפור</th>
+                      </>
+                    )}
+                    <th className="text-center py-3 px-4 font-medium text-gray-500">פעולות</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {getSortedStudents().map(student => (
+                    <tr key={student.id} className="border-b last:border-0 hover:bg-gray-50">
+                      <td className="py-3 px-4">
+                        {editingStudent?.id === student.id ? (
+                          <input
+                            type="text"
+                            value={editingStudent.name}
+                            onChange={(e) => setEditingStudent({ ...editingStudent, name: e.target.value })}
+                            className="border rounded px-2 py-1 w-full"
+                          />
+                        ) : (
+                          student.name
+                        )}
+                      </td>
+                      <td className="text-center py-3 px-4">
+                        {editingStudent?.id === student.id ? (
+                          <select
+                            value={editingStudent.gender}
+                            onChange={(e) => setEditingStudent({ ...editingStudent, gender: e.target.value as 'male' | 'female' })}
+                            className="border rounded px-2 py-1"
+                          >
+                            <option value="male">זכר</option>
+                            <option value="female">נקבה</option>
+                          </select>
+                        ) : (
+                          <span className={student.gender === 'male' ? 'text-blue-600' : 'text-pink-600'}>
+                            {student.gender === 'male' ? '👦' : '👧'}
+                          </span>
+                        )}
+                      </td>
+                      {selectedSport && (
+                        <>
+                          <td className="text-center py-3 px-4">
+                            <div className="flex flex-col items-center gap-1">
+                              <div className="flex items-center gap-1">
+                                <input
+                                  type="number"
+                                  step="0.1"
+                                  value={student.measurements[selectedSport]?.first || ''}
+                                  onChange={(e) => handleMeasurementChange(student.id, 'first', e.target.value)}
+                                  placeholder="-"
+                                  className={`w-20 text-center border rounded px-2 py-1 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
+                                    student.measurements[selectedSport]?.first && student.measurements[selectedSport]?.second && 
+                                    ((selectedSport === 'sprint' || selectedSport === 'long_run')
+                                      ? student.measurements[selectedSport].first < student.measurements[selectedSport].second
+                                      : student.measurements[selectedSport].first > student.measurements[selectedSport].second)
+                                      ? 'bg-green-50 border-green-200'
+                                      : ''
+                                  }`}
+                                />
+                                <span className="text-sm text-gray-500">{sportTypes.find(s => s.id === selectedSport)?.unit}</span>
+                              </div>
+                              {student.measurements[selectedSport]?.firstDate && (
+                                <span className="text-xs text-gray-500">{student.measurements[selectedSport].firstDate}</span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="text-center py-3 px-4">
+                            <div className="flex flex-col items-center gap-1">
+                              <div className="flex items-center gap-1">
+                                <input
+                                  type="number"
+                                  step="0.1"
+                                  value={student.measurements[selectedSport]?.second || ''}
+                                  onChange={(e) => handleMeasurementChange(student.id, 'second', e.target.value)}
+                                  placeholder="-"
+                                  className={`w-20 text-center border rounded px-2 py-1 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
+                                    student.measurements[selectedSport]?.first && student.measurements[selectedSport]?.second && 
+                                    ((selectedSport === 'sprint' || selectedSport === 'long_run')
+                                      ? student.measurements[selectedSport].second < student.measurements[selectedSport].first
+                                      : student.measurements[selectedSport].second > student.measurements[selectedSport].first)
+                                      ? 'bg-green-50 border-green-200'
+                                      : ''
+                                  }`}
+                                />
+                                <span className="text-sm text-gray-500">{sportTypes.find(s => s.id === selectedSport)?.unit}</span>
+                              </div>
+                              {student.measurements[selectedSport]?.secondDate && (
+                                <span className="text-xs text-gray-500">{student.measurements[selectedSport].secondDate}</span>
+                              )}
+                            </div>
+                          </td>
+                          <td className={`text-center py-3 px-4 ${
+                            student.measurements[selectedSport]?.first && student.measurements[selectedSport]?.second ? 
+                              `${(((student.measurements[selectedSport].second - student.measurements[selectedSport].first) / student.measurements[selectedSport].first) * 100).toFixed(1)}%`
+                              : ''
+                          }`}>
+                            {student.measurements[selectedSport]?.first && student.measurements[selectedSport]?.second ? 
+                              `${(((student.measurements[selectedSport].second - student.measurements[selectedSport].first) / student.measurements[selectedSport].first) * 100).toFixed(1)}%`
+                              : '-'}
+                          </td>
+                        </>
+                      )}
+                      <td className="text-center py-3 px-4">
+                        <div className="flex items-center justify-center gap-2">
+                          {editingStudent?.id === student.id ? (
+                            <>
+                              <button
+                                onClick={saveEditedStudent}
+                                className="p-1 text-green-600 hover:text-green-800"
+                              >
+                                <Check size={20} />
+                              </button>
+                              <button
+                                onClick={() => setEditingStudent(null)}
+                                className="p-1 text-red-600 hover:text-red-800"
+                              >
+                                <X size={20} />
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => handleEditStudent(student)}
+                                className="p-1 text-blue-600 hover:text-blue-800"
+                              >
+                                <Edit2 size={20} />
+                              </button>
+                              <button
+                                onClick={() => deleteStudent(student.id)}
+                                className="p-1 text-red-600 hover:text-red-800"
+                              >
+                                <Trash2 size={20} />
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* סטטיסטיקות */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-8">
+            <div className="bg-white p-6 rounded-lg shadow">
+              <div className="flex items-center justify-between">
+                <div className="text-gray-500">מספר תלמידים</div>
+                <Users className="h-6 w-6 text-blue-500" />
+              </div>
+              <div className="text-2xl font-bold mt-2">{stats.totalStudents}</div>
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow">
+              <div className="flex items-center justify-between">
+                <div className="text-gray-500">מצטיינים</div>
+                <Medal className="h-6 w-6 text-yellow-500" />
+              </div>
+              <div className="text-2xl font-bold mt-2">{stats.topPerformers}</div>
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow">
+              <div className="flex items-center justify-between">
+                <div className="text-gray-500">שיפור חודשי</div>
+                <TrendingUp className="h-6 w-6 text-green-500" />
+              </div>
+              <div className="text-2xl font-bold mt-2">
+                {stats.monthlyImprovement ? `${stats.monthlyImprovement.toFixed(1)}%` : '0%'}
+              </div>
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow">
+              <div className="flex items-center justify-between">
+                <div className="text-gray-500">מדידות החודש</div>
+                <ClipboardList className="h-6 w-6 text-purple-500" />
+              </div>
+              <div className="text-2xl font-bold mt-2">{stats.monthlyMeasurements}</div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 } 
