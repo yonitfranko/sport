@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { Users, Medal, TrendingUp, ClipboardList, ArrowRight, Trash2, Download, Edit2, Check, X, SortAsc } from 'lucide-react';
+import { Users, Medal, TrendingUp, ClipboardList, Edit2, Check, X, Trash2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 
@@ -51,8 +51,6 @@ export default function ClassPage() {
   const [showAddStudent, setShowAddStudent] = useState(false);
   const [newStudent, setNewStudent] = useState({ name: '', gender: 'male' as 'male' | 'female' });
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
-  const [sortBy, setSortBy] = useState<'name' | 'measurements' | null>(null);
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [genderFilter, setGenderFilter] = useState<'all' | 'male' | 'female'>('all');
 
   useEffect(() => {
@@ -328,17 +326,11 @@ export default function ClassPage() {
       sortedStudents = sortedStudents.filter(s => s.gender === genderFilter);
     }
 
-    if (sortBy === 'name') {
-      sortedStudents.sort((a, b) => {
-        return sortOrder === 'asc' ? 
-          a.name.localeCompare(b.name) : 
-          b.name.localeCompare(a.name);
-      });
-    } else if (sortBy === 'measurements' && selectedSport) {
+    if (selectedSport) {
       sortedStudents.sort((a, b) => {
         const aValue = a.measurements[selectedSport]?.second || a.measurements[selectedSport]?.first || 0;
         const bValue = b.measurements[selectedSport]?.second || b.measurements[selectedSport]?.first || 0;
-        return sortOrder === 'asc' ? aValue - bValue : bValue - aValue;
+        return aValue - bValue;
       });
     }
 
@@ -430,6 +422,12 @@ export default function ClassPage() {
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-semibold">תלמידי הכיתה</h3>
               <div className="flex gap-4">
+                <button
+                  onClick={exportToExcel}
+                  className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600"
+                >
+                  ייצא לאקסל
+                </button>
                 <select
                   value={genderFilter}
                   onChange={(e) => setGenderFilter(e.target.value as 'all' | 'male' | 'female')}
@@ -626,6 +624,77 @@ export default function ClassPage() {
               <div className="text-2xl font-bold mt-2">{stats.monthlyMeasurements}</div>
             </div>
           </div>
+
+          {/* מצטיינים */}
+          {selectedSport && (
+            <div className="mt-8">
+              <h3 className="text-xl font-semibold mb-4">מצטיינים בענף {sportTypes.find(s => s.id === selectedSport)?.name}</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-blue-50 rounded-lg p-4">
+                  <h4 className="font-medium text-blue-700 mb-2">בנים</h4>
+                  <div className="space-y-2">
+                    {getTopPerformers(selectedSport).boys.map(student => {
+                      const measurements = student.measurements[selectedSport];
+                      const bestResult = (selectedSport === 'sprint' || selectedSport === 'long_run')
+                        ? Math.min(measurements.first || Infinity, measurements.second || Infinity)
+                        : Math.max(measurements.first || -Infinity, measurements.second || -Infinity);
+                      const isFirstBetter = (selectedSport === 'sprint' || selectedSport === 'long_run')
+                        ? measurements.first < measurements.second
+                        : measurements.first > measurements.second;
+                      const bestDate = isFirstBetter ? measurements.firstDate : measurements.secondDate;
+                      
+                      return (
+                        <div key={student.id} className="flex items-center justify-between">
+                          <span className="text-gray-700">{student.name}</span>
+                          <div className="text-right">
+                            <span className="text-blue-600 font-medium block">
+                              {bestResult} {sportTypes.find(s => s.id === selectedSport)?.unit}
+                            </span>
+                            {bestDate && (
+                              <span className="text-xs text-gray-500 block">
+                                {bestDate}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div className="bg-pink-50 rounded-lg p-4">
+                  <h4 className="font-medium text-pink-700 mb-2">בנות</h4>
+                  <div className="space-y-2">
+                    {getTopPerformers(selectedSport).girls.map(student => {
+                      const measurements = student.measurements[selectedSport];
+                      const bestResult = (selectedSport === 'sprint' || selectedSport === 'long_run')
+                        ? Math.min(measurements.first || Infinity, measurements.second || Infinity)
+                        : Math.max(measurements.first || -Infinity, measurements.second || -Infinity);
+                      const isFirstBetter = (selectedSport === 'sprint' || selectedSport === 'long_run')
+                        ? measurements.first < measurements.second
+                        : measurements.first > measurements.second;
+                      const bestDate = isFirstBetter ? measurements.firstDate : measurements.secondDate;
+                      
+                      return (
+                        <div key={student.id} className="flex items-center justify-between">
+                          <span className="text-gray-700">{student.name}</span>
+                          <div className="text-right">
+                            <span className="text-pink-600 font-medium block">
+                              {bestResult} {sportTypes.find(s => s.id === selectedSport)?.unit}
+                            </span>
+                            {bestDate && (
+                              <span className="text-xs text-gray-500 block">
+                                {bestDate}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>
