@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { Users, Medal, TrendingUp, ClipboardList, ArrowRight, Trash2, Download, Edit2, Check, X, SortAsc, Filter } from 'lucide-react';
+import { Users, Medal, TrendingUp, ClipboardList, ArrowRight, Trash2, Download, Edit2, Check, X, SortAsc } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 
