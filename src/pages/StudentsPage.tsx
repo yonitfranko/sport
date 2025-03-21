@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Search, Filter, Download, Users, Medal, TrendingUp, ClipboardList } from 'lucide-react';
+import { Search, Download, Users, Medal, TrendingUp, ClipboardList } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 
