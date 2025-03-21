@@ -1,4 +1,4 @@
-import { Star, Award, BarChart2, Upload, ChevronDown } from 'lucide-react';
+import { Upload, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
@@ -231,6 +231,58 @@ export default function HomePage() {
     <div className="space-y-6">
       <h2 className="text-xl font-bold text-gray-700">ברוך הבא, מורה!</h2>
       
+      {/* Sports Section */}
+      <div className="bg-white rounded-xl shadow p-6">
+        <h3 className="text-lg font-bold text-gray-700 mb-4">ענפי ספורט</h3>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          {sportTypes.map(sport => (
+            <button
+              key={sport.id}
+              onClick={() => handleSportClick(sport.id)}
+              className={`${getButtonColorClass(sport.id)} rounded-lg p-4 text-white text-center transition-all`}
+            >
+              <div className="text-2xl mb-2">{sport.icon}</div>
+              <div className="font-medium">{sport.name}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Classes Section */}
+      <div className="bg-white rounded-xl shadow p-6">
+        <h3 className="text-lg font-bold text-gray-700 mb-4">כיתות</h3>
+        <div className="space-y-4">
+          {grades.map(grade => (
+            <div key={grade.id} className="border rounded-lg overflow-hidden">
+              <button
+                onClick={() => toggleGrade(grade.id)}
+                className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100"
+              >
+                <span className="font-medium">{grade.name}</span>
+                <ChevronDown
+                  className={`transform transition-transform ${
+                    openGrade === grade.id ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
+              {openGrade === grade.id && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4">
+                  {grade.classes.map(classId => (
+                    <button
+                      key={classId}
+                      onClick={() => navigateToClass(grade.id, classId)}
+                      className="bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg p-3 text-center transition-colors"
+                    >
+                      כיתה {classId}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Excel Upload Section */}
       <div className="bg-white rounded-xl shadow p-6">
         <h3 className="text-lg font-bold text-gray-700 mb-4">העלאת רשימת תלמידים</h3>
@@ -254,110 +306,35 @@ export default function HomePage() {
                 onChange={handleFileUpload}
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
               />
-              <span className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors cursor-pointer">
+              <span className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 cursor-pointer">
                 בחר קובץ
               </span>
             </label>
-            <p className="text-gray-500 text-sm mt-2">קבצי אקסל בלבד (.xlsx, .xls)</p>
           </div>
 
           {uploadError && (
-            <div className="bg-red-50 text-red-600 p-4 rounded-lg">
+            <div className="bg-red-50 text-red-600 p-4 rounded-lg whitespace-pre-line">
               {uploadError}
             </div>
           )}
         </div>
       </div>
-      
-      {/* Sport Types Grid */}
-      <div className="bg-white rounded-xl shadow p-6">
-        <h3 className="text-lg font-bold text-gray-700 mb-4">ענפי ספורט</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          {sportTypes.map(sport => (
-            <div key={sport.id} className="flex flex-col">
-              <button 
-                onClick={() => handleSportClick(sport.id)}
-                className={`w-full h-12 rounded-lg p-2 text-white transition-all ${getButtonColorClass(sport.id)}`}
-              >
-                <div className="flex items-center justify-center gap-2">
-                  <span className="text-xl">{sport.icon}</span>
-                  <span className="font-medium">{sport.name}</span>
-                </div>
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
 
-      {/* Grades Accordion */}
-      <div className="bg-white rounded-xl shadow p-6">
-        <h3 className="text-lg font-bold text-gray-700 mb-4">שכבות וכיתות</h3>
-        <div className="space-y-2">
-          {grades.map((grade) => (
-            <div key={grade.id} className="border rounded-lg overflow-hidden">
-              <button
-                onClick={() => toggleGrade(grade.id)}
-                className="w-full px-4 py-3 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors"
-              >
-                <span className="font-medium text-gray-700">{grade.name}</span>
-                <ChevronDown
-                  size={20}
-                  className={`text-gray-500 transition-transform ${
-                    openGrade === grade.id ? 'transform rotate-180' : ''
-                  }`}
-                />
-              </button>
-              {openGrade === grade.id && (
-                <div className="p-4 bg-white border-t">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    {grade.classes.map((className) => (
-                      <button
-                        key={className}
-                        onClick={() => navigateToClass(grade.id, className)}
-                        className="px-4 py-2 text-sm bg-indigo-50 text-indigo-700 rounded-lg hover:bg-indigo-100 transition-colors"
-                      >
-                        כיתה {className}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="bg-white rounded-xl shadow p-6">
-        <h3 className="text-lg font-bold text-gray-700 mb-4">פעולות מהירות</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button className="bg-amber-500 text-white rounded-lg px-4 py-3 font-medium hover:bg-amber-600 transition flex items-center justify-center gap-2">
-            <Star size={20} />
-            מצטיינים
-          </button>
-          <button className="bg-purple-500 text-white rounded-lg px-4 py-3 font-medium hover:bg-purple-600 transition flex items-center justify-center gap-2">
-            <Award size={20} />
-            הפקת דוח מצטיינים
-          </button>
-          <button className="bg-teal-500 text-white rounded-lg px-4 py-3 font-medium hover:bg-teal-600 transition flex items-center justify-center gap-2">
-            <BarChart2 size={20} />
-            השוואת נתונים
-          </button>
-        </div>
-      </div>
-
-      {/* מדידות אחרונות */}
+      {/* Recent Measurements Section */}
       <div className="bg-white rounded-xl shadow p-6">
         <h3 className="text-lg font-bold text-gray-700 mb-4">מדידות אחרונות</h3>
-        <div className="space-y-4">
-          {recentMeasurements.map((measurement, i) => (
-            <div key={i} className="flex items-center justify-between p-2 border-b last:border-0">
+        <div className="space-y-3">
+          {recentMeasurements.map((measurement, index) => (
+            <div
+              key={index}
+              className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+            >
               <div>
-                <div className="font-medium">{measurement.studentName}</div>
-                <div className="text-sm text-gray-500">כיתה {measurement.className}</div>
+                <span className="font-medium">{measurement.studentName}</span>
+                <span className="text-gray-500 text-sm"> • כיתה {measurement.className}</span>
               </div>
               <div className="text-right">
-                <div className="font-medium">{measurement.result} שניות</div>
+                <div className="font-medium text-gray-900">{measurement.result}</div>
                 <div className="text-sm text-gray-500">{measurement.sport}</div>
               </div>
             </div>
