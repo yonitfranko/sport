@@ -1,6 +1,6 @@
 import { Upload, ChevronDown, Settings } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 
 interface SportType {
@@ -9,7 +9,8 @@ interface SportType {
   description: string;
   icon: string;
   unit: string;
-  color: string;
+  isLowerBetter: boolean;
+  color?: string;
 }
 
 interface Grade {
@@ -40,22 +41,16 @@ interface Student {
 
 interface SystemSettings {
   grades: Grade[];
-  sports: {
-    id: string;
-    name: string;
-    description: string;
-    icon: string;
-    unit: string;
-    isLowerBetter: boolean;
-  }[];
+  sports: SportType[];
+  schoolName: string;
 }
 
 const sportTypes: SportType[] = [
-  { id: 'sprint', name: 'ספרינט', description: '100 מטר', icon: '🏃', unit: 'שניות', color: 'teal' },
-  { id: 'long_jump', name: 'קפיצה למרחק', description: 'קפיצה למרחק', icon: '↔️', unit: 'מטרים', color: 'indigo' },
-  { id: 'high_jump', name: 'קפיצה לגובה', description: 'קפיצה לגובה', icon: '↕️', unit: 'מטרים', color: 'purple' },
-  { id: 'ball_throw', name: 'זריקת כדור', description: 'זריקת כדור', icon: '🏐', unit: 'מטרים', color: 'amber' },
-  { id: 'long_run', name: 'ריצה ארוכה', description: '2000 מטר', icon: '🏃‍♂️', unit: 'דקות', color: 'rose' }
+  { id: 'sprint', name: 'ספרינט', description: '100 מטר', icon: '🏃', unit: 'שניות', isLowerBetter: false },
+  { id: 'long_jump', name: 'קפיצה למרחק', description: 'קפיצה למרחק', icon: '↔️', unit: 'מטרים', isLowerBetter: false },
+  { id: 'high_jump', name: 'קפיצה לגובה', description: 'קפיצה לגובה', icon: '↕️', unit: 'מטרים', isLowerBetter: false },
+  { id: 'ball_throw', name: 'זריקת כדור', description: 'זריקת כדור', icon: '🏐', unit: 'מטרים', isLowerBetter: false },
+  { id: 'long_run', name: 'ריצה ארוכה', description: '2000 מטר', icon: '‍♂️', unit: 'דקות', isLowerBetter: false }
 ];
 
 // ברירת מחדל לשכבות
@@ -75,13 +70,35 @@ const getButtonColorClass = (sportId: string) => {
     'ball_throw': 'bg-amber-500 hover:bg-amber-600',
     'long_run': 'bg-rose-500 hover:bg-rose-600'
   };
-  return colorMap[sportId] || 'bg-gray-500 hover:bg-gray-600';
+
+  // אם יש צבע מוגדר לענף, נשתמש בו
+  if (colorMap[sportId]) {
+    return colorMap[sportId];
+  }
+
+  // אם אין צבע מוגדר, נשתמש בצבע ברירת מחדל לפי האינדקס
+  const defaultColors = [
+    'bg-blue-500 hover:bg-blue-600',
+    'bg-green-500 hover:bg-green-600',
+    'bg-purple-500 hover:bg-purple-600',
+    'bg-red-500 hover:bg-red-600',
+    'bg-yellow-500 hover:bg-yellow-600',
+    'bg-pink-500 hover:bg-pink-600',
+    'bg-indigo-500 hover:bg-indigo-600',
+    'bg-teal-500 hover:bg-teal-600'
+  ];
+
+  // נשתמש ב-hash פשוט כדי לקבל אינדקס קבוע לכל ענף ספורט
+  const hash = sportId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  return defaultColors[hash % defaultColors.length];
 };
 
 export default function HomePage() {
   const [openGrade, setOpenGrade] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [grades, setGrades] = useState<Grade[]>(defaultGrades);
+  const [schoolName, setSchoolName] = useState<string>('');
+  const [sports, setSports] = useState(sportTypes);
   const navigate = useNavigate();
 
   // טעינת הגדרות המערכת
@@ -92,6 +109,12 @@ export default function HomePage() {
         const settings: SystemSettings = JSON.parse(savedSettings);
         if (settings.grades && settings.grades.length > 0) {
           setGrades(settings.grades);
+        }
+        if (settings.schoolName) {
+          setSchoolName(settings.schoolName);
+        }
+        if (settings.sports) {
+          setSports(settings.sports);
         }
       } catch (error) {
         console.error('Error loading system settings:', error);
@@ -108,6 +131,9 @@ export default function HomePage() {
           const settings: SystemSettings = JSON.parse(savedSettings);
           if (settings.grades && settings.grades.length > 0) {
             setGrades(settings.grades);
+          }
+          if (settings.schoolName) {
+            setSchoolName(settings.schoolName);
           }
         } catch (error) {
           console.error('Error handling storage change:', error);
@@ -265,10 +291,6 @@ export default function HomePage() {
     navigate(`/class/${gradeId}/${classId}`);
   };
 
-  const handleSportClick = (sportId: string) => {
-    navigate(`/sport/${sportId}`);
-  };
-
   // נתוני דמו למדידות אחרונות
   const recentMeasurements = [
     { studentName: 'דניאל כהן', className: 'ו2', result: '11.8', sport: 'ריצת 100 מטר' },
@@ -279,7 +301,9 @@ export default function HomePage() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-xl font-bold text-gray-700">ברוך הבא, מורה!</h2>
+        <h2 className="text-xl font-bold text-gray-700">
+          {schoolName ? `מערכת מעקב של בית ספר ${schoolName}` : 'ברוך הבא, מורה!'}
+        </h2>
         <button
           onClick={() => navigate('/settings')}
           className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 flex items-center gap-2"
@@ -292,17 +316,18 @@ export default function HomePage() {
       {/* Sports Section */}
       <div className="bg-white rounded-xl shadow p-6">
         <h3 className="text-lg font-bold text-gray-700 mb-4">ענפי ספורט</h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          {sportTypes.map(sport => (
-            <button
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {sports.map(sport => (
+            <Link
               key={sport.id}
-              onClick={() => handleSportClick(sport.id)}
-              className={`${getButtonColorClass(sport.id)} rounded-lg p-4 text-white text-center transition-all`}
+              to={`/sport/${sport.id}`}
+              className={`${getButtonColorClass(sport.id)} rounded-lg p-4 text-white hover:opacity-90 transition-all text-right block w-full`}
             >
               <div className="text-2xl mb-2">{sport.icon}</div>
               <div className="font-medium">{sport.name}</div>
               <div className="text-sm opacity-90">{sport.description}</div>
-            </button>
+              <div className="text-sm opacity-80 mt-1">יחידת מידה: {sport.unit}</div>
+            </Link>
           ))}
         </div>
       </div>

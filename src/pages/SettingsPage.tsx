@@ -5,7 +5,9 @@ import {
   Trash2, 
   Plus, 
   Download,
-  Settings as SettingsIcon
+  Settings as SettingsIcon,
+  ChevronDown,
+  X
 } from 'lucide-react';
 
 interface SystemSettings {
@@ -103,8 +105,16 @@ export default function SettingsPage() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [newSport, setNewSport] = useState({ name: '', description: '', icon: '', unit: '', isLowerBetter: true });
   const [newGrade, setNewGrade] = useState({ id: '', name: '', classes: [''] });
-  const [selectedGradeForClass, setSelectedGradeForClass] = useState<string>('');
   const [newClass, setNewClass] = useState('');
+  const [isGradesAccordionOpen, setIsGradesAccordionOpen] = useState(true);
+  const [isSportsAccordionOpen, setIsSportsAccordionOpen] = useState(true);
+
+  const commonIcons = [
+    '🏃', '🏃‍♂️', '🏃‍♀️', '⚽', '🏀', '🏈', '⚾', '🏐', '🏉', '🎾', '🏓', '🏸', '🏒', '🏑', '🏏',
+    '🏊', '🏊‍♂️', '🏊‍♀️', '🚴', '🚴‍♂️', '🚴‍♀️', '🚵', '🚵‍♂️', '🚵‍♀️', '🏋️', '🏋️‍♂️', '🏋️‍♀️',
+    '🤸', '🤸‍♂️', '🤸‍♀️', '⛹️', '⛹️‍♂️', '⛹️‍♀️', '🏅', '🎖️', '🏆', '🎯', '🎳', '🏹', '🤺',
+    '🏂', '⛷️', '🏎️', '🏍️', '🤾', '🤾‍♂️', '🤾‍♀️', '🏌️', '🏌️‍♂️', '🏌️‍♀️', '🏇', '🤹', '🤹‍♂️', '🤹‍♀️'
+  ];
 
   useEffect(() => {
     // טעינת הגדרות מ-localStorage
@@ -115,6 +125,7 @@ export default function SettingsPage() {
   }, []);
 
   const handleSave = () => {
+    console.log('SettingsPage: Saving settings:', settings);
     setIsSaving(true);
     try {
       localStorage.setItem('systemSettings', JSON.stringify(settings));
@@ -141,14 +152,43 @@ export default function SettingsPage() {
   };
 
   const addSport = () => {
-    if (!newSport.name || !newSport.description || !newSport.icon || !newSport.unit) return;
+    if (!newSport.name || !newSport.description || !newSport.icon || !newSport.unit) {
+      alert('נא למלא את כל השדות הנדרשים');
+      return;
+    }
     
     const sportId = newSport.name.toLowerCase().replace(/\s+/g, '_');
+    
+    // בדיקה אם הענף כבר קיים
+    if (settings.sports.some(s => s.id === sportId)) {
+      alert('ענף ספורט עם שם זה כבר קיים');
+      return;
+    }
+
+    const newSportWithId = {
+      ...newSport,
+      id: sportId
+    };
+
     setSettings(prev => ({
       ...prev,
-      sports: [...prev.sports, { ...newSport, id: sportId }]
+      sports: [...prev.sports, newSportWithId]
     }));
-    setNewSport({ name: '', description: '', icon: '', unit: '', isLowerBetter: true });
+
+    // איפוס הטופס
+    setNewSport({
+      name: '',
+      description: '',
+      icon: '',
+      unit: '',
+      isLowerBetter: true
+    });
+
+    // שמירת ההגדרות
+    localStorage.setItem('systemSettings', JSON.stringify({
+      ...settings,
+      sports: [...settings.sports, newSportWithId]
+    }));
   };
 
   const removeSport = (sportId: string) => {
@@ -226,38 +266,274 @@ export default function SettingsPage() {
       )}
 
       <div className="space-y-6">
-        {/* הגדרות כלליות */}
-        <div className="bg-white rounded-xl shadow p-6">
-          <h3 className="text-lg font-bold text-gray-700 mb-4 flex items-center gap-2">
-            <SettingsIcon className="w-5 h-5" />
-            הגדרות כלליות
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                שם בית הספר
-              </label>
-              <input
-                type="text"
-                value={settings.schoolName}
-                onChange={(e) => setSettings({ ...settings, schoolName: e.target.value })}
-                className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="הכנס שם בית ספר"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                שנת לימודים נוכחית
-              </label>
+        {/* School Name Section */}
+        <div className="bg-white rounded-xl shadow p-6 mb-6">
+          <h3 className="text-lg font-bold text-gray-700 mb-4">שם בית הספר</h3>
+          <div className="flex items-center gap-4">
+            <input
+              type="text"
+              value={settings.schoolName}
+              onChange={(e) => setSettings({ ...settings, schoolName: e.target.value })}
+              className="border rounded px-4 py-2 flex-1"
+              placeholder="הזן את שם בית הספר"
+            />
+            <div className="flex items-center gap-2">
               <input
                 type="text"
                 value={settings.currentYear}
                 onChange={(e) => setSettings({ ...settings, currentYear: e.target.value })}
-                className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="שנת לימודים"
+                className="border rounded px-4 py-2 w-32"
+                placeholder="שנה"
               />
+              <span className="text-gray-600">תשפ"ד</span>
             </div>
           </div>
+        </div>
+
+        {/* Grades and Classes Section */}
+        <div className="bg-white rounded-xl shadow p-6 mb-6">
+          <button
+            onClick={() => setIsGradesAccordionOpen(!isGradesAccordionOpen)}
+            className="w-full flex items-center justify-between mb-4"
+          >
+            <h3 className="text-lg font-bold text-gray-700">שכבות וכיתות</h3>
+            <ChevronDown
+              className={`transform transition-transform ${
+                isGradesAccordionOpen ? 'rotate-180' : ''
+              }`}
+            />
+          </button>
+          {isGradesAccordionOpen && (
+            <div className="space-y-4">
+              {/* Add New Grade Form */}
+              <div className="border rounded-lg p-4 bg-gray-50">
+                <h4 className="font-medium text-gray-700 mb-3">הוספת שכבה חדשה</h4>
+                <div className="flex items-center gap-4">
+                  <input
+                    type="text"
+                    value={newGrade.id}
+                    onChange={(e) => setNewGrade({ ...newGrade, id: e.target.value })}
+                    placeholder="קוד שכבה"
+                    className="flex-1 p-2 border rounded"
+                  />
+                  <input
+                    type="text"
+                    value={newGrade.name}
+                    onChange={(e) => setNewGrade({ ...newGrade, name: e.target.value })}
+                    placeholder="שם שכבה"
+                    className="flex-1 p-2 border rounded"
+                  />
+                  <button
+                    onClick={addGrade}
+                    className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+                  >
+                    הוסף
+                  </button>
+                </div>
+              </div>
+
+              {/* Grades List */}
+              <div className="space-y-4">
+                {settings.grades.map((grade) => (
+                  <div key={grade.id} className="border rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-medium">{grade.name}</h3>
+                      <button
+                        onClick={() => removeGrade(grade.id)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <Trash2 size={20} />
+                      </button>
+                    </div>
+                    <div className="space-y-2">
+                      {grade.classes.map((cls) => (
+                        <div key={cls} className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={cls}
+                            onChange={(e) => setSettings(prev => ({
+                              ...prev,
+                              grades: prev.grades.map((g) =>
+                                g.id === grade.id ? { ...g, classes: g.classes.map((c) => c === cls ? e.target.value : c) } : g
+                              )
+                            }))}
+                            className="flex-1 p-1 border rounded"
+                          />
+                          <button
+                            onClick={() => removeClassFromGrade(grade.id, cls)}
+                            className="text-red-500 hover:text-red-700"
+                          >
+                            <X size={20} />
+                          </button>
+                        </div>
+                      ))}
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={newClass}
+                          onChange={(e) => setNewClass(e.target.value)}
+                          placeholder="הוסף כיתה חדשה"
+                          className="flex-1 p-1 border rounded"
+                        />
+                        <button
+                          onClick={() => addClassToGrade(grade.id)}
+                          className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
+                        >
+                          הוסף
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Sports Section */}
+        <div className="bg-white rounded-xl shadow p-6 mb-6">
+          <button
+            onClick={() => setIsSportsAccordionOpen(!isSportsAccordionOpen)}
+            className="w-full flex items-center justify-between mb-4"
+          >
+            <h3 className="text-lg font-bold text-gray-700">ענפי ספורט</h3>
+            <ChevronDown
+              className={`transform transition-transform ${
+                isSportsAccordionOpen ? 'rotate-180' : ''
+              }`}
+            />
+          </button>
+          {isSportsAccordionOpen && (
+            <div className="space-y-4">
+              {/* Add New Sport Form */}
+              <div className="border rounded-lg p-4 bg-gray-50">
+                <h4 className="font-medium text-gray-700 mb-3">הוספת ענף ספורט חדש</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <input
+                    type="text"
+                    value={newSport.name}
+                    onChange={(e) => setNewSport({ ...newSport, name: e.target.value })}
+                    placeholder="שם הענף"
+                    className="p-2 border rounded"
+                  />
+                  <input
+                    type="text"
+                    value={newSport.description}
+                    onChange={(e) => setNewSport({ ...newSport, description: e.target.value })}
+                    placeholder="תיאור"
+                    className="p-2 border rounded"
+                  />
+                  <input
+                    type="text"
+                    value={newSport.icon}
+                    onChange={(e) => setNewSport({ ...newSport, icon: e.target.value })}
+                    placeholder="אייקון"
+                    className="p-2 border rounded"
+                  />
+                  <input
+                    type="text"
+                    value={newSport.unit}
+                    onChange={(e) => setNewSport({ ...newSport, unit: e.target.value })}
+                    placeholder="יחידת מידה"
+                    className="p-2 border rounded"
+                  />
+                  <select
+                    value={newSport.isLowerBetter ? 'true' : 'false'}
+                    onChange={(e) => setNewSport({ ...newSport, isLowerBetter: e.target.value === 'true' })}
+                    className="p-2 border rounded"
+                  >
+                    <option value="false">ערך גבוה יותר טוב</option>
+                    <option value="true">ערך נמוך יותר טוב</option>
+                  </select>
+                  <button
+                    onClick={addSport}
+                    className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+                  >
+                    הוסף ענף
+                  </button>
+                </div>
+              </div>
+
+              {/* Sports List */}
+              <div className="space-y-4">
+                {settings.sports.map((sport, index) => (
+                  <div key={sport.id} className="border rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-4">
+                        <input
+                          type="text"
+                          value={sport.name}
+                          onChange={(e) => setSettings(prev => ({
+                            ...prev,
+                            sports: prev.sports.map((s, i) =>
+                              i === index ? { ...s, name: e.target.value } : s
+                            )
+                          }))}
+                          className="border rounded px-2 py-1"
+                          placeholder="שם הענף"
+                        />
+                        <input
+                          type="text"
+                          value={sport.description}
+                          onChange={(e) => setSettings(prev => ({
+                            ...prev,
+                            sports: prev.sports.map((s, i) =>
+                              i === index ? { ...s, description: e.target.value } : s
+                            )
+                          }))}
+                          className="border rounded px-2 py-1"
+                          placeholder="תיאור"
+                        />
+                        <input
+                          type="text"
+                          value={sport.icon}
+                          onChange={(e) => setSettings(prev => ({
+                            ...prev,
+                            sports: prev.sports.map((s, i) =>
+                              i === index ? { ...s, icon: e.target.value } : s
+                            )
+                          }))}
+                          className="border rounded px-2 py-1"
+                          placeholder="אייקון"
+                        />
+                        <input
+                          type="text"
+                          value={sport.unit}
+                          onChange={(e) => setSettings(prev => ({
+                            ...prev,
+                            sports: prev.sports.map((s, i) =>
+                              i === index ? { ...s, unit: e.target.value } : s
+                            )
+                          }))}
+                          className="border rounded px-2 py-1"
+                          placeholder="יחידת מידה"
+                        />
+                        <select
+                          value={sport.isLowerBetter ? 'true' : 'false'}
+                          onChange={(e) => setSettings(prev => ({
+                            ...prev,
+                            sports: prev.sports.map((s, i) =>
+                              i === index ? { ...s, isLowerBetter: e.target.value === 'true' } : s
+                            )
+                          }))}
+                          className="border rounded px-2 py-1"
+                        >
+                          <option value="false">ערך גבוה יותר טוב</option>
+                          <option value="true">ערך נמוך יותר טוב</option>
+                        </select>
+                        <button
+                          onClick={() => removeSport(sport.id)}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <Trash2 size={20} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* הגדרות מדידות */}
@@ -423,283 +699,108 @@ export default function SettingsPage() {
 
         {/* הגדרות מצטיינים */}
         <div className="bg-white rounded-xl shadow p-6 mb-6">
-          <h2 className="text-lg font-semibold mb-4">הגדרות מצטיינים</h2>
+          <h3 className="text-lg font-bold text-gray-700 mb-4 flex items-center gap-2">
+            <SettingsIcon className="w-5 h-5" />
+            הגדרות מצטיינים
+          </h3>
           <div className="space-y-6">
-            <div>
-              <h3 className="text-md font-medium mb-3">מצטיינים כיתתיים</h3>
-              <div className="grid grid-cols-2 gap-4">
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h3 className="text-md font-medium mb-4">מצטיינים כיתתיים</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm text-gray-600 mb-1">מספר מצטיינים בנים</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="3"
-                    value={settings.topPerformers.class.male}
-                    onChange={(e) => setSettings(prev => ({
-                      ...prev,
-                      topPerformers: {
-                        ...prev.topPerformers,
-                        class: { ...prev.topPerformers.class, male: parseInt(e.target.value) }
-                      }
-                    }))}
-                    className="w-full border rounded-lg p-2"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-600 mb-1">מספר מצטיינים בנות</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="3"
-                    value={settings.topPerformers.class.female}
-                    onChange={(e) => setSettings(prev => ({
-                      ...prev,
-                      topPerformers: {
-                        ...prev.topPerformers,
-                        class: { ...prev.topPerformers.class, female: parseInt(e.target.value) }
-                      }
-                    }))}
-                    className="w-full border rounded-lg p-2"
-                  />
-                </div>
-              </div>
-            </div>
-            <div>
-              <h3 className="text-md font-medium mb-3">מצטיינים שכבתיים</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm text-gray-600 mb-1">מספר מצטיינים בנים</label>
-                  <input
-                    type="number"
-                    min="3"
-                    max="6"
-                    value={settings.topPerformers.grade.male}
-                    onChange={(e) => setSettings(prev => ({
-                      ...prev,
-                      topPerformers: {
-                        ...prev.topPerformers,
-                        grade: { ...prev.topPerformers.grade, male: parseInt(e.target.value) }
-                      }
-                    }))}
-                    className="w-full border rounded-lg p-2"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-600 mb-1">מספר מצטיינים בנות</label>
-                  <input
-                    type="number"
-                    min="3"
-                    max="6"
-                    value={settings.topPerformers.grade.female}
-                    onChange={(e) => setSettings(prev => ({
-                      ...prev,
-                      topPerformers: {
-                        ...prev.topPerformers,
-                        grade: { ...prev.topPerformers.grade, female: parseInt(e.target.value) }
-                      }
-                    }))}
-                    className="w-full border rounded-lg p-2"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* הגדרות ענפי ספורט */}
-        <div className="bg-white rounded-xl shadow p-6 mb-6">
-          <h2 className="text-lg font-semibold mb-4">ענפי ספורט</h2>
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">שם הענף</label>
-                <input
-                  type="text"
-                  value={newSport.name}
-                  onChange={(e) => setNewSport(prev => ({ ...prev, name: e.target.value }))}
-                  className="w-full border rounded-lg p-2"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">תיאור</label>
-                <input
-                  type="text"
-                  value={newSport.description}
-                  onChange={(e) => setNewSport(prev => ({ ...prev, description: e.target.value }))}
-                  className="w-full border rounded-lg p-2"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">אייקון</label>
-                <input
-                  type="text"
-                  value={newSport.icon}
-                  onChange={(e) => setNewSport(prev => ({ ...prev, icon: e.target.value }))}
-                  className="w-full border rounded-lg p-2"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">יחידת מידה</label>
-                <input
-                  type="text"
-                  value={newSport.unit}
-                  onChange={(e) => setNewSport(prev => ({ ...prev, unit: e.target.value }))}
-                  className="w-full border rounded-lg p-2"
-                />
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={newSport.isLowerBetter}
-                  onChange={(e) => setNewSport(prev => ({ ...prev, isLowerBetter: e.target.checked }))}
-                  className="rounded"
-                />
-                <span className="text-sm text-gray-600">תוצאה נמוכה יותר היא טובה יותר</span>
-              </label>
-              <button
-                onClick={addSport}
-                className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 flex items-center gap-2"
-              >
-                <Plus className="w-4 h-4" />
-                הוסף ענף
-              </button>
-            </div>
-
-            <div className="mt-6">
-              <h3 className="text-md font-medium mb-3">ענפי ספורט קיימים</h3>
-              <div className="space-y-2">
-                {settings.sports.map(sport => (
-                  <div key={sport.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div>
-                      <div className="font-medium">{sport.name}</div>
-                      <div className="text-sm text-gray-600">{sport.description}</div>
-                      <div className="text-sm text-gray-500">{sport.unit}</div>
-                    </div>
-                    <button
-                      onClick={() => removeSport(sport.id)}
-                      className="text-red-600 hover:text-red-800"
-                    >
-                      <Trash2 className="w-5 h-5" />
-                    </button>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    מספר מצטיינים בנים
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min="1"
+                      max="3"
+                      value={settings.topPerformers.class.male}
+                      onChange={(e) => setSettings(prev => ({
+                        ...prev,
+                        topPerformers: {
+                          ...prev.topPerformers,
+                          class: { ...prev.topPerformers.class, male: parseInt(e.target.value) }
+                        }
+                      }))}
+                      className="w-full border rounded-lg p-2"
+                    />
+                    <span className="text-sm text-gray-500">תלמידים</span>
                   </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* הוספת שכבה וכיתות */}
-        <div className="bg-white rounded-xl shadow p-6 mb-6">
-          <h3 className="text-lg font-bold text-gray-700 mb-4">הוספת שכבה וכיתות</h3>
-          <div className="text-gray-500 text-sm mb-4">
-            הוסיפו שכבה חדשה עם הכיתות שלה. הזינו את מזהה השכבה (למשל: ח), את שם השכבה (למשל: שכבה ח׳) ואת הכיתות (למשל: ח1, ח2, ח3).
-          </div>
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">מזהה שכבה</label>
-                <input
-                  type="text"
-                  value={newGrade.id}
-                  onChange={(e) => setNewGrade(prev => ({ ...prev, id: e.target.value }))}
-                  className="w-full border rounded-lg p-2"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">שם השכבה</label>
-                <input
-                  type="text"
-                  value={newGrade.name}
-                  onChange={(e) => setNewGrade(prev => ({ ...prev, name: e.target.value }))}
-                  className="w-full border rounded-lg p-2"
-                />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">כיתות (מופרדות בפסיק)</label>
-                <input
-                  type="text"
-                  value={newGrade.classes.join(',')}
-                  onChange={(e) => setNewGrade(prev => ({ ...prev, classes: e.target.value.split(',').map(c => c.trim()) }))}
-                  className="w-full border rounded-lg p-2"
-                />
-              </div>
-            </div>
-            <button
-              onClick={addGrade}
-              className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 flex items-center gap-2"
-            >
-              <Plus className="w-4 h-4" />
-              הוסף שכבה
-            </button>
-
-            <div className="mt-8 border-t pt-6">
-              <h3 className="text-md font-medium mb-3">הוספת כיתה לשכבה קיימת</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">בחר שכבה</label>
-                  <select
-                    value={selectedGradeForClass}
-                    onChange={(e) => setSelectedGradeForClass(e.target.value)}
-                    className="w-full border rounded-lg p-2"
-                  >
-                    <option value="">בחר שכבה</option>
-                    {settings.grades.map(grade => (
-                      <option key={grade.id} value={grade.id}>{grade.name}</option>
-                    ))}
-                  </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">שם הכיתה</label>
-                  <input
-                    type="text"
-                    value={newClass}
-                    onChange={(e) => setNewClass(e.target.value)}
-                    className="w-full border rounded-lg p-2"
-                    placeholder="למשל: ח1"
-                  />
-                </div>
-              </div>
-              <button
-                onClick={() => selectedGradeForClass && addClassToGrade(selectedGradeForClass)}
-                disabled={!selectedGradeForClass || !newClass.trim()}
-                className="mt-4 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 flex items-center gap-2 disabled:opacity-50"
-              >
-                <Plus className="w-4 h-4" />
-                הוסף כיתה
-              </button>
-            </div>
-
-            <div className="mt-8">
-              <h3 className="text-md font-medium mb-3">שכבות וכתות</h3>
-              <div className="space-y-4">
-                {settings.grades.map(grade => (
-                  <div key={grade.id} className="bg-gray-50 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="font-medium">{grade.name}</div>
-                      <button
-                        onClick={() => removeGrade(grade.id)}
-                        className="text-red-600 hover:text-red-800"
-                      >
-                        <Trash2 className="w-5 h-5" />
-                      </button>
-                    </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                      {grade.classes.map(className => (
-                        <div key={className} className="flex items-center justify-between bg-white p-2 rounded">
-                          <span>{className}</span>
-                          <button
-                            onClick={() => removeClassFromGrade(grade.id, className)}
-                            className="text-red-600 hover:text-red-800"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    מספר מצטיינים בנות
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min="1"
+                      max="3"
+                      value={settings.topPerformers.class.female}
+                      onChange={(e) => setSettings(prev => ({
+                        ...prev,
+                        topPerformers: {
+                          ...prev.topPerformers,
+                          class: { ...prev.topPerformers.class, female: parseInt(e.target.value) }
+                        }
+                      }))}
+                      className="w-full border rounded-lg p-2"
+                    />
+                    <span className="text-sm text-gray-500">תלמידות</span>
                   </div>
-                ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h3 className="text-md font-medium mb-4">מצטיינים שכבתיים</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    מספר מצטיינים בנים
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min="3"
+                      max="6"
+                      value={settings.topPerformers.grade.male}
+                      onChange={(e) => setSettings(prev => ({
+                        ...prev,
+                        topPerformers: {
+                          ...prev.topPerformers,
+                          grade: { ...prev.topPerformers.grade, male: parseInt(e.target.value) }
+                        }
+                      }))}
+                      className="w-full border rounded-lg p-2"
+                    />
+                    <span className="text-sm text-gray-500">תלמידים</span>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    מספר מצטיינים בנות
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min="3"
+                      max="6"
+                      value={settings.topPerformers.grade.female}
+                      onChange={(e) => setSettings(prev => ({
+                        ...prev,
+                        topPerformers: {
+                          ...prev.topPerformers,
+                          grade: { ...prev.topPerformers.grade, female: parseInt(e.target.value) }
+                        }
+                      }))}
+                      className="w-full border rounded-lg p-2"
+                    />
+                    <span className="text-sm text-gray-500">תלמידות</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

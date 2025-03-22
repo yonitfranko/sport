@@ -16,29 +16,143 @@ interface GradeTopStudents {
   students: TopStudent[];
 }
 
+interface SportType {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  unit: string;
+  isLowerBetter: boolean;
+}
+
+interface Grade {
+  id: string;
+  name: string;
+  classes: string[];
+}
+
 export default function SportPage() {
   const { sportId } = useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [topPerformers, setTopPerformers] = useState<GradeTopStudents[]>([]);
   const [openGrade, setOpenGrade] = useState<string | null>(null);
+  const [sport, setSport] = useState<SportType | null>(null);
+  const [grades, setGrades] = useState<Grade[]>([]);
+  const [sports, setSports] = useState<SportType[]>([]);
 
-  // מיפוי ענפי הספורט
-  const sportTypes = {
-    'sprint': { name: 'ספרינט', description: '100 מטר', icon: '🏃', unit: 'שניות', isLowerBetter: true },
-    'long_jump': { name: 'קפיצה למרחק', description: 'קפיצה למרחק', icon: '↔️', unit: 'מטרים', isLowerBetter: false },
-    'high_jump': { name: 'קפיצה לגובה', description: 'קפיצה לגובה', icon: '↕️', unit: 'מטרים', isLowerBetter: false },
-    'ball_throw': { name: 'זריקת כדור', description: 'זריקת כדור', icon: '🏐', unit: 'מטרים', isLowerBetter: false },
-    'long_run': { name: 'ריצה ארוכה', description: '2000 מטר', icon: '🏃‍♂️', unit: 'דקות', isLowerBetter: true }
-  };
+  useEffect(() => {
+    console.log('SportPage: Component mounted');
+  }, []);
 
-  const grades = [
-    { id: 'ד', name: 'שכבה ד׳', classes: ['ד1', 'ד2', 'ד3', 'ד4'] },
-    { id: 'ה', name: 'שכבה ה׳', classes: ['ה1', 'ה2', 'ה3'] },
-    { id: 'ו', name: 'שכבה ו׳', classes: ['ו1', 'ו2', 'ו3', 'ו4'] },
-    { id: 'ז', name: 'שכבה ז׳', classes: ['ז1', 'ז2', 'ז3'] },
-    { id: 'ח', name: 'שכבה ח׳', classes: ['ח1', 'ח2', 'ח3', 'ח4'] }
-  ];
+  useEffect(() => {
+    const loadSettings = () => {
+      try {
+        console.log('Loading settings for sport:', sportId);
+        const savedSettings = localStorage.getItem('systemSettings');
+        
+        if (!savedSettings) {
+          console.error('No settings found in localStorage');
+          return;
+        }
+
+        const settings = JSON.parse(savedSettings);
+        console.log('Parsed settings:', settings);
+
+        if (!settings.grades || !settings.sports || !Array.isArray(settings.grades) || !Array.isArray(settings.sports)) {
+          console.error('Invalid settings structure:', settings);
+          return;
+        }
+
+        setGrades(settings.grades);
+
+        if (!sportId) {
+          console.error('No sportId in URL params');
+          return;
+        }
+
+        const foundSport = settings.sports.find((s: SportType) => s.id === sportId);
+        console.log('Found sport:', foundSport);
+
+        if (!foundSport) {
+          console.error('Sport not found:', sportId);
+          return;
+        }
+
+        setSport(foundSport);
+        loadTopPerformers(foundSport, settings.grades);
+      } catch (error) {
+        console.error('Error in loadSettings:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const loadTopPerformers = (currentSport: SportType, currentGrades: Grade[]) => {
+      try {
+        const studentsData = localStorage.getItem('students');
+        if (!studentsData) {
+          console.log('No students data found');
+          setTopPerformers([]);
+          return;
+        }
+
+        const students = JSON.parse(studentsData);
+        console.log('Loaded students:', students);
+        
+        const topPerformersByGrade = currentGrades.map(grade => {
+          const gradeStudents = students.filter((s: any) => 
+            s.grade === grade.id && 
+            s.measurements[sportId]
+          );
+
+          const sortedStudents = gradeStudents
+            .map((student: any) => {
+              const measurements = student.measurements[sportId];
+              if (!measurements) return null;
+
+              const bestResult = currentSport.isLowerBetter
+                ? Math.min(measurements.first || Infinity, measurements.second || Infinity)
+                : Math.max(measurements.first || -Infinity, measurements.second || -Infinity);
+
+              if (bestResult === Infinity || bestResult === -Infinity) return null;
+
+              const isFirstBetter = currentSport.isLowerBetter
+                ? measurements.first < (measurements.second || Infinity)
+                : measurements.first > (measurements.second || -Infinity);
+              
+              return {
+                name: student.name,
+                class: student.class,
+                result: bestResult,
+                date: isFirstBetter ? measurements.firstDate : measurements.secondDate
+              };
+            })
+            .filter((s): s is TopStudent => s !== null)
+            .sort((a, b) => 
+              currentSport.isLowerBetter 
+                ? a.result - b.result 
+                : b.result - a.result
+            )
+            .slice(0, 4);
+
+          return {
+            gradeId: grade.id,
+            gradeName: grade.name,
+            students: sortedStudents
+          };
+        });
+
+        console.log('Setting top performers:', topPerformersByGrade);
+        setTopPerformers(topPerformersByGrade);
+      } catch (error) {
+        console.error('Error in loadTopPerformers:', error);
+        setTopPerformers([]);
+      }
+    };
+
+    loadSettings();
+  }, [sportId]);
 
   const toggleGrade = (gradeId: string) => {
     setOpenGrade(openGrade === gradeId ? null : gradeId);
@@ -48,76 +162,6 @@ export default function SportPage() {
     navigate(`/class/${gradeId}/${classId}?sport=${sportId}`);
   };
 
-  useEffect(() => {
-    if (!sportId || !sportTypes[sportId as keyof typeof sportTypes]) {
-      navigate('/');
-      return;
-    }
-
-    const loadTopPerformers = () => {
-      setLoading(true);
-      try {
-        // טעינת התלמידים מ-localStorage
-        const studentsData = localStorage.getItem('students');
-        if (!studentsData) {
-          setTopPerformers([]);
-          return;
-        }
-
-        const students = JSON.parse(studentsData);
-        const sport = sportTypes[sportId as keyof typeof sportTypes];
-        
-        // מציאת המצטיינים לכל שכבה
-        const topPerformersByGrade = grades.map(grade => {
-          // סינון תלמידים של השכבה הנוכחית שיש להם מדידות בענף הספורט הנבחר
-          const gradeStudents = students.filter((s: any) => 
-            s.grade === grade.id && 
-            s.measurements[sportId]
-          );
-
-          // מיון התלמידים לפי התוצאה הטובה ביותר
-          const sortedStudents = gradeStudents
-            .map((student: any) => {
-              const measurements = student.measurements[sportId];
-              const bestResult = sport.isLowerBetter
-                ? Math.min(measurements.first || Infinity, measurements.second || Infinity)
-                : Math.max(measurements.first || -Infinity, measurements.second || -Infinity);
-              const isFirstBetter = sport.isLowerBetter
-                ? measurements.first < measurements.second
-                : measurements.first > measurements.second;
-              
-              return {
-                name: student.name,
-                class: student.class,
-                result: bestResult,
-                date: isFirstBetter ? measurements.firstDate : measurements.secondDate
-              };
-            })
-            .sort((a: TopStudent, b: TopStudent) => 
-              sport.isLowerBetter 
-                ? a.result - b.result 
-                : b.result - a.result
-            )
-            .slice(0, 4); // לקיחת 4 המצטיינים בלבד
-
-          return {
-            gradeId: grade.id,
-            gradeName: grade.name,
-            students: sortedStudents
-          };
-        });
-
-        setTopPerformers(topPerformersByGrade);
-      } catch (error) {
-        console.error('Error loading top performers:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadTopPerformers();
-  }, [sportId, navigate]);
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -126,7 +170,6 @@ export default function SportPage() {
     );
   }
 
-  const sport = sportTypes[sportId as keyof typeof sportTypes];
   if (!sport) return null;
 
   return (
@@ -202,7 +245,7 @@ export default function SportPage() {
           {grades.map(grade => (
             <div key={grade.id} className="border rounded-lg overflow-hidden">
               <button
-                onClick={() => toggleGrade(grade.id)}
+                onClick={() => setOpenGrade(openGrade === grade.id ? null : grade.id)}
                 className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100"
               >
                 <span className="font-medium">{grade.name}</span>
@@ -217,7 +260,7 @@ export default function SportPage() {
                   {grade.classes.map(classId => (
                     <button
                       key={classId}
-                      onClick={() => navigateToClass(grade.id, classId)}
+                      onClick={() => navigate(`/class/${grade.id}/${classId}?sport=${sportId}`)}
                       className="bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg p-3 text-center transition-colors"
                     >
                       כיתה {classId}

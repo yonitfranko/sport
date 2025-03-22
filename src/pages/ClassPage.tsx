@@ -2,6 +2,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Users, Medal, TrendingUp, ClipboardList, Edit2, Check, X, Trash2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
+import { Link } from 'react-router-dom';
 
 interface Measurement {
   first: number | null;
@@ -32,14 +33,6 @@ interface SportType {
   isLowerBetter: boolean;
 }
 
-const sportTypes: SportType[] = [
-  { id: 'sprint', name: 'ספרינט', description: '100 מטר', icon: '🏃', unit: 'שניות', isLowerBetter: true },
-  { id: 'long_jump', name: 'קפיצה למרחק', description: 'קפיצה למרחק', icon: '↔️', unit: 'מטרים', isLowerBetter: false },
-  { id: 'high_jump', name: 'קפיצה לגובה', description: 'קפיצה לגובה', icon: '↕️', unit: 'מטרים', isLowerBetter: false },
-  { id: 'ball_throw', name: 'זריקת כדור', description: 'זריקת כדור', icon: '🏐', unit: 'מטרים', isLowerBetter: false },
-  { id: 'long_run', name: 'ריצה ארוכה', description: '2000 מטר', icon: '🏃‍♂️', unit: 'דקות', isLowerBetter: true }
-];
-
 const getButtonColorClass = (sportId: string) => {
   const colorMap: { [key: string]: string } = {
     'sprint': 'bg-teal-500 hover:bg-teal-600',
@@ -61,7 +54,6 @@ export default function ClassPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [selectedSport, setSelectedSport] = useState<string | null>(() => {
-    // בדיקה אם הגענו מדף ספורט
     const params = new URLSearchParams(location.search);
     return params.get('sport');
   });
@@ -74,19 +66,13 @@ export default function ClassPage() {
   const [genderFilter, setGenderFilter] = useState<'all' | 'male' | 'female'>('all');
   const [firstMeasurementDate, setFirstMeasurementDate] = useState(getCurrentDate());
   const [secondMeasurementDate, setSecondMeasurementDate] = useState(getCurrentDate());
+  const [sports, setSports] = useState<SportType[]>([]);
 
   useEffect(() => {
     const loadStudents = () => {
       try {
         setLoading(true);
         setError(null);
-
-        // בדיקת פרמטרים
-        if (!gradeId || !classId) {
-          throw new Error('מזהה כיתה או שכבה חסרים');
-        }
-
-        console.log('Loading students for grade:', gradeId, 'class:', classId); // DEBUG
 
         // טעינת תלמידים מה-localStorage
         const savedStudents = localStorage.getItem('students');
@@ -116,7 +102,19 @@ export default function ClassPage() {
       }
     };
 
+    // טעינת הגדרות המערכת
+    const loadSettings = () => {
+      const savedSettings = localStorage.getItem('systemSettings');
+      if (savedSettings) {
+        const settings = JSON.parse(savedSettings);
+        if (settings.sports) {
+          setSports(settings.sports);
+        }
+      }
+    };
+
     loadStudents();
+    loadSettings();
   }, [gradeId, classId]);
 
   // אם הדף בטעינה, מציג אנימציית טעינה
@@ -240,7 +238,7 @@ export default function ClassPage() {
   };
 
   const getTopPerformers = (sportId: string) => {
-    const sport = sportTypes.find(s => s.id === sportId);
+    const sport = sports.find(s => s.id === sportId);
     if (!sport) return { boys: [], girls: [] };
 
     const filteredStudents = students.filter(s => s.measurements[sportId]?.first || s.measurements[sportId]?.second);
@@ -310,7 +308,7 @@ export default function ClassPage() {
   };
 
   const exportToExcel = () => {
-    const sportType = selectedSport ? sportTypes.find(s => s.id === selectedSport) : null;
+    const sportType = selectedSport ? sports.find(s => s.id === selectedSport) : null;
     
     const data = students
       .filter(student => genderFilter === 'all' || student.gender === genderFilter)
@@ -364,13 +362,11 @@ export default function ClassPage() {
           בחרו ענף ספורט כדי להזין מדידות לתלמידים. כל ענף מציג את יחידת המידה שלו (שניות, מטרים, דקות).
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          {sportTypes.map(sport => (
+          {sports.map(sport => (
             <button
               key={sport.id}
               onClick={() => setSelectedSport(sport.id)}
-              className={`${getButtonColorClass(sport.id)} rounded-lg p-4 text-white text-center transition-all ${
-                selectedSport === sport.id ? 'ring-4 ring-offset-2' : ''
-              }`}
+              className={`${getButtonColorClass(sport.id)} rounded-lg p-4 text-white hover:opacity-90 transition-all text-right block w-full`}
             >
               <div className="text-2xl mb-2">{sport.icon}</div>
               <div className="font-medium">{sport.name}</div>
@@ -438,7 +434,7 @@ export default function ClassPage() {
                 <h3 className="text-xl font-semibold">תלמידי הכיתה</h3>
                 {selectedSport && (
                   <div className="text-gray-600 mt-1">
-                    {sportTypes.find(s => s.id === selectedSport)?.name} - {sportTypes.find(s => s.id === selectedSport)?.description}
+                    {sports.find(s => s.id === selectedSport)?.name} - {sports.find(s => s.id === selectedSport)?.description}
                   </div>
                 )}
               </div>
@@ -508,7 +504,7 @@ export default function ClassPage() {
                 <tbody>
                   {getSortedStudents().map(student => {
                     const measurements: Measurement = selectedSport ? (student.measurements[selectedSport] || { first: null, second: null, firstDate: null, secondDate: null }) : { first: null, second: null, firstDate: null, secondDate: null };
-                    const sport = sportTypes.find(s => s.id === selectedSport);
+                    const sport = sports.find(s => s.id === selectedSport);
                     
                     // בדיקת תקינות המדידות
                     const hasValidMeasurements = measurements.first !== null && measurements.second !== null;
@@ -632,7 +628,7 @@ export default function ClassPage() {
           {/* מצטיינים */}
           {selectedSport && (
             <div className="bg-white rounded-xl shadow p-6 mb-8">
-              <h3 className="text-xl font-semibold mb-4">מצטיינים בענף {sportTypes.find(s => s.id === selectedSport)?.name}</h3>
+              <h3 className="text-xl font-semibold mb-4">מצטיינים בענף {sports.find(s => s.id === selectedSport)?.name}</h3>
               <div className="text-gray-500 text-sm mb-4">
                 מוצגים שני התלמידים המצטיינים ביותר בכל מגדר, עם התוצאה הטובה ביותר והתאריך שבו הושגה.
               </div>
@@ -656,7 +652,7 @@ export default function ClassPage() {
                           <span className="text-gray-700">{student.name}</span>
                           <div className="text-right">
                             <span className="text-blue-600 font-medium block">
-                              {bestResult} {sportTypes.find(s => s.id === selectedSport)?.unit}
+                              {bestResult} {sports.find(s => s.id === selectedSport)?.unit}
                             </span>
                             {bestDate && (
                               <span className="text-xs text-gray-500 block">
@@ -688,7 +684,7 @@ export default function ClassPage() {
                           <span className="text-gray-700">{student.name}</span>
                           <div className="text-right">
                             <span className="text-pink-600 font-medium block">
-                              {bestResult} {sportTypes.find(s => s.id === selectedSport)?.unit}
+                              {bestResult} {sports.find(s => s.id === selectedSport)?.unit}
                             </span>
                             {bestDate && (
                               <span className="text-xs text-gray-500 block">

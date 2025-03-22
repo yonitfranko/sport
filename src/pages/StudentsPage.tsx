@@ -28,14 +28,6 @@ interface SportType {
   isLowerBetter: boolean;
 }
 
-const sportTypes: SportType[] = [
-  { id: 'sprint', name: 'ספרינט', description: '100 מטר', icon: '🏃', unit: 'שניות', isLowerBetter: true },
-  { id: 'long_jump', name: 'קפיצה למרחק', description: 'קפיצה למרחק', icon: '↔️', unit: 'מטרים', isLowerBetter: false },
-  { id: 'high_jump', name: 'קפיצה לגובה', description: 'קפיצה לגובה', icon: '↕️', unit: 'מטרים', isLowerBetter: false },
-  { id: 'ball_throw', name: 'זריקת כדור', description: 'זריקת כדור', icon: '🏐', unit: 'מטרים', isLowerBetter: false },
-  { id: 'long_run', name: 'ריצה ארוכה', description: '2000 מטר', icon: '🏃‍♂️', unit: 'דקות', isLowerBetter: true }
-];
-
 export default function StudentsPage() {
   const navigate = useNavigate();
   const [students, setStudents] = useState<Student[]>([]);
@@ -46,24 +38,35 @@ export default function StudentsPage() {
   const [measurementFilter, setMeasurementFilter] = useState<'all' | 'has_measurements' | 'no_measurements'>('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [sports, setSports] = useState<SportType[]>([]);
 
   useEffect(() => {
-    const loadStudents = () => {
+    const loadData = () => {
       try {
         setLoading(true);
+        // טעינת הגדרות המערכת
+        const savedSettings = localStorage.getItem('systemSettings');
+        if (savedSettings) {
+          const settings = JSON.parse(savedSettings);
+          if (settings.sports) {
+            setSports(settings.sports);
+          }
+        }
+
+        // טעינת תלמידים
         const savedStudents = localStorage.getItem('students');
         if (savedStudents) {
           setStudents(JSON.parse(savedStudents));
         }
       } catch (err) {
-        console.error('Error loading students:', err);
-        setError('שגיאה בטעינת נתוני התלמידים');
+        console.error('Error loading data:', err);
+        setError('שגיאה בטעינת נתונים');
       } finally {
         setLoading(false);
       }
     };
 
-    loadStudents();
+    loadData();
   }, []);
 
   const filteredStudents = students.filter(student => {
@@ -107,7 +110,7 @@ export default function StudentsPage() {
       'כיתה': student.class,
       'שכבה': student.grade,
       ...Object.entries(student.measurements).reduce((acc, [sportId, measurements]) => {
-        const sport = sportTypes.find(s => s.id === sportId);
+        const sport = sports.find(s => s.id === sportId);
         if (!sport) return acc;
         return {
           ...acc,
@@ -213,7 +216,7 @@ export default function StudentsPage() {
                 className="border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">כל הענפים</option>
-                {sportTypes.map(sport => (
+                {sports.map(sport => (
                   <option key={sport.id} value={sport.id}>{sport.name}</option>
                 ))}
               </select>
@@ -271,7 +274,7 @@ export default function StudentsPage() {
                   <td className="text-center py-3 px-4">
                     <div className="flex flex-wrap gap-2 justify-center">
                       {Object.entries(student.measurements).map(([sportId, measurements]) => {
-                        const sport = sportTypes.find(s => s.id === sportId);
+                        const sport = sports.find(s => s.id === sportId);
                         if (!sport) return null;
                         const hasValidMeasurements = measurements.first !== null && measurements.second !== null;
                         const improvement = hasValidMeasurements ? 
