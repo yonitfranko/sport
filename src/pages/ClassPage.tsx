@@ -360,6 +360,9 @@ export default function ClassPage() {
       {/* Sports Section */}
       <div className="bg-white rounded-xl shadow p-6 mb-6">
         <h3 className="text-lg font-bold text-gray-700 mb-4">ענפי ספורט</h3>
+        <div className="text-gray-500 text-sm mb-4">
+          בחרו ענף ספורט כדי להזין מדידות לתלמידים. כל ענף מציג את יחידת המידה שלו (שניות, מטרים, דקות).
+        </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           {sportTypes.map(sport => (
             <button
@@ -379,6 +382,9 @@ export default function ClassPage() {
 
       {/* הוספת תלמיד */}
       <div className="mb-8">
+        <div className="text-gray-500 text-sm mb-4">
+          הוספת תלמיד/ה חדש/ה לכיתה. הזינו את השם והמגדר ולחצו על "הוסף".
+        </div>
         {!showAddStudent ? (
           <button
             onClick={() => setShowAddStudent(true)}
@@ -437,6 +443,10 @@ export default function ClassPage() {
                 )}
               </div>
               <div className="flex gap-4">
+                <div className="text-gray-500 text-sm">
+                  <p>ייצוא נתונים לאקסל</p>
+                  <p>סינון לפי מגדר</p>
+                </div>
                 <button
                   onClick={exportToExcel}
                   className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600"
@@ -456,6 +466,10 @@ export default function ClassPage() {
             </div>
 
             <div className="overflow-x-auto">
+              <div className="text-gray-500 text-sm mb-2">
+                <p>הזינו את תוצאות המדידות בשדות המתאימים. המערכת תחשב אוטומטית את אחוז השיפור.</p>
+                <p>תוצאה טובה יותר תוצג ברקע ירוק.</p>
+              </div>
               <table className="w-full">
                 <thead>
                   <tr className="bg-gray-50 border-b">
@@ -619,6 +633,9 @@ export default function ClassPage() {
           {selectedSport && (
             <div className="bg-white rounded-xl shadow p-6 mb-8">
               <h3 className="text-xl font-semibold mb-4">מצטיינים בענף {sportTypes.find(s => s.id === selectedSport)?.name}</h3>
+              <div className="text-gray-500 text-sm mb-4">
+                מוצגים שני התלמידים המצטיינים ביותר בכל מגדר, עם התוצאה הטובה ביותר והתאריך שבו הושגה.
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-blue-50 rounded-lg p-4">
                   <h4 className="font-medium text-blue-700 mb-2">בנים</h4>

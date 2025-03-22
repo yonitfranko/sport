@@ -1,5 +1,5 @@
-import { Upload, ChevronDown } from 'lucide-react';
-import { useState } from 'react';
+import { Upload, ChevronDown, Settings } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 
@@ -38,6 +38,18 @@ interface Student {
   class: string;
 }
 
+interface SystemSettings {
+  grades: Grade[];
+  sports: {
+    id: string;
+    name: string;
+    description: string;
+    icon: string;
+    unit: string;
+    isLowerBetter: boolean;
+  }[];
+}
+
 const sportTypes: SportType[] = [
   { id: 'sprint', name: 'ספרינט', description: '100 מטר', icon: '🏃', unit: 'שניות', color: 'teal' },
   { id: 'long_jump', name: 'קפיצה למרחק', description: 'קפיצה למרחק', icon: '↔️', unit: 'מטרים', color: 'indigo' },
@@ -46,7 +58,8 @@ const sportTypes: SportType[] = [
   { id: 'long_run', name: 'ריצה ארוכה', description: '2000 מטר', icon: '🏃‍♂️', unit: 'דקות', color: 'rose' }
 ];
 
-const grades: Grade[] = [
+// ברירת מחדל לשכבות
+const defaultGrades: Grade[] = [
   { id: 'ד', name: 'שכבה ד׳', classes: ['ד1', 'ד2', 'ד3', 'ד4'] },
   { id: 'ה', name: 'שכבה ה׳', classes: ['ה1', 'ה2', 'ה3'] },
   { id: 'ו', name: 'שכבה ו׳', classes: ['ו1', 'ו2', 'ו3', 'ו4'] },
@@ -68,7 +81,43 @@ const getButtonColorClass = (sportId: string) => {
 export default function HomePage() {
   const [openGrade, setOpenGrade] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [grades, setGrades] = useState<Grade[]>(defaultGrades);
   const navigate = useNavigate();
+
+  // טעינת הגדרות המערכת
+  useEffect(() => {
+    const savedSettings = localStorage.getItem('systemSettings');
+    if (savedSettings) {
+      try {
+        const settings: SystemSettings = JSON.parse(savedSettings);
+        if (settings.grades && settings.grades.length > 0) {
+          setGrades(settings.grades);
+        }
+      } catch (error) {
+        console.error('Error loading system settings:', error);
+      }
+    }
+  }, []);
+
+  // האזנה לשינויים ב-localStorage
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const savedSettings = localStorage.getItem('systemSettings');
+      if (savedSettings) {
+        try {
+          const settings: SystemSettings = JSON.parse(savedSettings);
+          if (settings.grades && settings.grades.length > 0) {
+            setGrades(settings.grades);
+          }
+        } catch (error) {
+          console.error('Error handling storage change:', error);
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -229,7 +278,16 @@ export default function HomePage() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-bold text-gray-700">ברוך הבא, מורה!</h2>
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-bold text-gray-700">ברוך הבא, מורה!</h2>
+        <button
+          onClick={() => navigate('/settings')}
+          className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 flex items-center gap-2"
+        >
+          <Settings className="w-4 h-4" />
+          הגדרות מערכת
+        </button>
+      </div>
       
       {/* Sports Section */}
       <div className="bg-white rounded-xl shadow p-6">
@@ -252,6 +310,9 @@ export default function HomePage() {
       {/* Classes Section */}
       <div className="bg-white rounded-xl shadow p-6">
         <h3 className="text-lg font-bold text-gray-700 mb-4">כיתות</h3>
+        <div className="text-gray-500 text-sm mb-4">
+          לחצו על כל שכבה כדי לראות את הכיתות שלה. לחצו על כיתה כדי להיכנס לדף הכיתה ולנהל את התלמידים.
+        </div>
         <div className="space-y-4">
           {grades.map(grade => (
             <div key={grade.id} className="border rounded-lg overflow-hidden">
@@ -295,6 +356,17 @@ export default function HomePage() {
               <li>עמודת 'מגדר' - זכר/נקבה</li>
               <li>עמודת 'כיתה' - למשל: ו2</li>
             </ul>
+          </div>
+          
+          <div className="text-gray-500 text-sm">
+            <p className="mb-2">הוראות להעלאת קובץ:</p>
+            <ol className="list-decimal list-inside space-y-1">
+              <li>הכינו קובץ אקסל עם העמודות הנדרשות</li>
+              <li>ודאו שכל השמות והכיתות מוזנים נכון</li>
+              <li>ודאו שהמגדר מוזן כ"זכר" או "נקבה" בלבד</li>
+              <li>ודאו שהכיתות תואמות את הכיתות המוגדרות במערכת</li>
+              <li>לחצו על "בחר קובץ" או גררו את הקובץ לתיבת ההעלאה</li>
+            </ol>
           </div>
           
           <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-6 bg-gray-50 hover:bg-gray-100 transition-colors">
