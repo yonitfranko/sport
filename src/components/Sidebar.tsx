@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Users, Settings, Menu, X } from 'lucide-react';
+import { Home, Users, Settings, X } from 'lucide-react';
 
 interface SidebarProps {
   isOpen: boolean;

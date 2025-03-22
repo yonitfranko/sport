@@ -1,6 +1,28 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Settings, Save, School, Calendar, Users, Medal, TrendingUp, ClipboardList, Download, Upload, Trash2, Plus } from 'lucide-react';
+import { 
+  Save, 
+  Trash2, 
+  Plus, 
+  Bell, 
+  BellOff, 
+  Clock, 
+  Ruler, 
+  Scale, 
+  Timer, 
+  Target, 
+  AlertCircle, 
+  CheckCircle2, 
+  XCircle, 
+  Mail, 
+  Phone, 
+  MessageSquare,
+  FileText,
+  Download,
+  ChevronDown,
+  ChevronUp,
+  Settings as SettingsIcon
+} from 'lucide-react';
 
 interface SystemSettings {
   schoolName: string;
@@ -223,7 +245,7 @@ export default function SettingsPage() {
         {/* הגדרות כלליות */}
         <div className="bg-white rounded-xl shadow p-6">
           <h3 className="text-lg font-bold text-gray-700 mb-4 flex items-center gap-2">
-            <School className="w-5 h-5" />
+            <SettingsIcon className="w-5 h-5" />
             הגדרות כלליות
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -257,7 +279,7 @@ export default function SettingsPage() {
         {/* הגדרות מדידות */}
         <div className="bg-white rounded-xl shadow p-6">
           <h3 className="text-lg font-bold text-gray-700 mb-4 flex items-center gap-2">
-            <Medal className="w-5 h-5" />
+            <SettingsIcon className="w-5 h-5" />
             הגדרות מדידות
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -329,7 +351,7 @@ export default function SettingsPage() {
         {/* הגדרות תצוגה */}
         <div className="bg-white rounded-xl shadow p-6">
           <h3 className="text-lg font-bold text-gray-700 mb-4 flex items-center gap-2">
-            <Settings className="w-5 h-5" />
+            <SettingsIcon className="w-5 h-5" />
             הגדרות תצוגה
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -366,7 +388,7 @@ export default function SettingsPage() {
         {/* הגדרות התראות */}
         <div className="bg-white rounded-xl shadow p-6">
           <h3 className="text-lg font-bold text-gray-700 mb-4 flex items-center gap-2">
-            <ClipboardList className="w-5 h-5" />
+            <SettingsIcon className="w-5 h-5" />
             הגדרות התראות
           </h3>
           <div className="space-y-4">
