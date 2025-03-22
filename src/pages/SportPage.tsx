@@ -2,7 +2,6 @@ import { useParams } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { Trophy, ArrowLeft, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import XLSX from 'xlsx';
 
 interface TopStudent {
   name: string;
@@ -14,21 +13,15 @@ interface TopStudent {
 interface GradeTopStudents {
   gradeId: string;
   gradeName: string;
-  students: TopStudent[];
+  first: TopStudent[];
+  second: TopStudent[];
 }
 
 interface Student {
   id: number;
   name: string;
   gender: 'male' | 'female';
-  measurements: {
-    [key: string]: {
-      first: number | null;
-      second: number | null;
-      firstDate?: string | null;
-      secondDate?: string | null;
-    };
-  };
+  measurements: Measurement[];
   grade: string;
   class: string;
 }
@@ -36,7 +29,24 @@ interface Student {
 interface Grade {
   id: string;
   name: string;
+  sportId: string;
+  studentIds: number[];
   classes: string[];
+}
+
+interface Measurement {
+  sportId: string;
+  gradeId: string;
+  first: number | null;
+  second: number | null;
+  firstDate?: string | null;
+  secondDate?: string | null;
+}
+
+interface MeasurementResult {
+  student: Student;
+  first: number | null;
+  second: number | null;
 }
 
 interface Sport {
@@ -54,225 +64,78 @@ export default function SportPage() {
   const [students, setStudents] = useState<Student[]>([]);
   const [grades, setGrades] = useState<Grade[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [openGrade, setOpenGrade] = useState<string | null>(null);
-  const [uploadError, setUploadError] = useState<string | null>(null);
   const [topPerformers, setTopPerformers] = useState<GradeTopStudents[]>([]);
   const [sport, setSport] = useState<Sport | null>(null);
-  const [sports, setSports] = useState<Sport[]>([]);
-
-  useEffect(() => {
-    console.log('SportPage: Component mounted');
-  }, []);
 
   useEffect(() => {
     const loadData = () => {
-      try {
-        setLoading(true);
-        setError(null);
+      const studentsData = localStorage.getItem('students');
+      const gradesData = localStorage.getItem('grades');
+      const sportsData = localStorage.getItem('sports');
 
-        // טעינת תלמידים מה-localStorage
-        const savedStudents = localStorage.getItem('students');
-        if (savedStudents) {
-          setStudents(JSON.parse(savedStudents));
-        }
+      if (studentsData && gradesData && sportsData) {
+        const allStudents = JSON.parse(studentsData);
+        const allGrades = JSON.parse(gradesData);
+        const allSports = JSON.parse(sportsData);
 
-        // טעינת הגדרות המערכת
-        const savedSettings = localStorage.getItem('systemSettings');
-        if (savedSettings) {
-          const settings = JSON.parse(savedSettings);
-          if (settings.grades) {
-            setGrades(settings.grades);
-          }
+        const currentSport = allSports.find((s: Sport) => s.id === sportId);
+        if (currentSport) {
+          setSport(currentSport);
+          setStudents(allStudents);
+          setGrades(allGrades.filter((g: Grade) => g.sportId === sportId));
         }
-      } catch (err) {
-        console.error('Error loading data:', err);
-        setError('שגיאה בטעינת נתונים');
-      } finally {
-        setLoading(false);
       }
+      setLoading(false);
     };
 
     loadData();
-  }, []);
-
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const data = new Uint8Array(e.target?.result as ArrayBuffer);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet);
-
-        const newStudents: Student[] = jsonData.map((row: any) => ({
-          id: Math.random(),
-          name: row['שם'] || '',
-          gender: row['מגדר'] === 'זכר' ? 'male' : 'female',
-          measurements: {},
-          grade: row['כיתה'] || '',
-          class: row['שכבה'] || ''
-        }));
-
-        const existingStudents = localStorage.getItem('students');
-        const allStudents = existingStudents ? JSON.parse(existingStudents) : [];
-        const updatedStudents = [...allStudents, ...newStudents];
-        localStorage.setItem('students', JSON.stringify(updatedStudents));
-        setStudents(updatedStudents);
-        setUploadError(null);
-      } catch (err) {
-        console.error('Error processing file:', err);
-        setUploadError('שגיאה בעיבוד הקובץ');
-      }
-    };
-
-    reader.readAsArrayBuffer(file);
-  };
-
-  const getTopPerformers = (gradeId: string, classId: string) => {
-    const gradeStudents = students.filter(s => s.grade === gradeId && s.class === classId);
-    
-    const getBestResult = (student: Student) => {
-      const measurements = student.measurements;
-      if (!measurements) return 0;
-      
-      return Object.values(measurements).reduce((best, measurement) => {
-        if (!measurement.first || !measurement.second) return best;
-        const improvement = ((measurement.second - measurement.first) / measurement.first) * 100;
-        return Math.max(best, improvement);
-      }, 0);
-    };
-
-    const boys = gradeStudents
-      .filter(s => s.gender === 'male')
-      .sort((a, b) => getBestResult(b) - getBestResult(a))
-      .slice(0, 2);
-
-    const girls = gradeStudents
-      .filter(s => s.gender === 'female')
-      .sort((a, b) => getBestResult(b) - getBestResult(a))
-      .slice(0, 2);
-
-    return { boys, girls };
-  };
+  }, [sportId]);
 
   useEffect(() => {
-    const loadSettings = () => {
-      try {
-        console.log('Loading settings for sport:', sportId);
-        const savedSettings = localStorage.getItem('systemSettings');
-        
-        if (!savedSettings) {
-          console.error('No settings found in localStorage');
-          return;
-        }
-
-        const settings = JSON.parse(savedSettings);
-        console.log('Parsed settings:', settings);
-
-        if (!settings.grades || !settings.sports || !Array.isArray(settings.grades) || !Array.isArray(settings.sports)) {
-          console.error('Invalid settings structure:', settings);
-          return;
-        }
-
-        setGrades(settings.grades);
-
-        if (!sportId) {
-          console.error('No sportId in URL params');
-          return;
-        }
-
-        const foundSport = settings.sports.find((s: Sport) => s.id === sportId);
-        console.log('Found sport:', foundSport);
-
-        if (!foundSport) {
-          console.error('Sport not found:', sportId);
-          return;
-        }
-
-        setSport(foundSport);
-        loadTopPerformers(foundSport, settings.grades);
-      } catch (error) {
-        console.error('Error in loadSettings:', error);
-      }
-    };
-
-    const loadTopPerformers = (currentSport: Sport, currentGrades: Grade[]) => {
-      try {
-        const studentsData = localStorage.getItem('students');
-        if (!studentsData) {
-          console.log('No students data found');
-          setTopPerformers([]);
-          return;
-        }
-
-        const students = JSON.parse(studentsData);
-        console.log('Loaded students:', students);
-        
-        const topPerformersByGrade = currentGrades.map(grade => {
-          const gradeStudents = students.filter((s: any) => 
-            s.grade === grade.id && 
-            s.measurements[sportId]
-          );
-
-          const sortedStudents = gradeStudents
-            .map((student: any) => {
-              const measurements = student.measurements[sportId];
-              if (!measurements) return null;
-
-              const bestResult = currentSport.isLowerBetter
-                ? Math.min(measurements.first || Infinity, measurements.second || Infinity)
-                : Math.max(measurements.first || -Infinity, measurements.second || -Infinity);
-
-              if (bestResult === Infinity || bestResult === -Infinity) return null;
-
-              const isFirstBetter = currentSport.isLowerBetter
-                ? measurements.first < (measurements.second || Infinity)
-                : measurements.first > (measurements.second || -Infinity);
-              
-              return {
-                name: student.name,
-                class: student.class,
-                result: bestResult,
-                date: isFirstBetter ? measurements.firstDate : measurements.secondDate
-              };
-            })
-            .filter((s): s is TopStudent => s !== null)
-            .sort((a, b) => 
-              currentSport.isLowerBetter 
-                ? a.result - b.result 
-                : b.result - a.result
-            )
-            .slice(0, 4);
-
+    if (grades.length > 0) {
+      const top = grades.map(grade => {
+        const gradeStudents = students.filter(s => grade.studentIds.includes(s.id));
+        const measurements = gradeStudents.map(student => {
+          const measurement = student.measurements.find((m: Measurement) => m.sportId === sportId && m.gradeId === grade.id);
           return {
-            gradeId: grade.id,
-            gradeName: grade.name,
-            students: sortedStudents
+            student,
+            first: measurement?.first || null,
+            second: measurement?.second || null
           };
         });
 
-        console.log('Setting top performers:', topPerformersByGrade);
-        setTopPerformers(topPerformersByGrade);
-      } catch (error) {
-        console.error('Error in loadTopPerformers:', error);
-        setTopPerformers([]);
-      }
-    };
+        const bestFirst = measurements
+          .filter((m): m is MeasurementResult & { first: number } => m.first !== null)
+          .sort((a, b) => a.first - b.first)
+          .slice(0, 3);
 
-    loadSettings();
-  }, [sportId]);
+        const bestSecond = measurements
+          .filter((m): m is MeasurementResult & { second: number } => m.second !== null)
+          .sort((a, b) => a.second - b.second)
+          .slice(0, 3);
 
-  const toggleGrade = (gradeId: string) => {
-    setOpenGrade(openGrade === gradeId ? null : gradeId);
-  };
+        return {
+          gradeId: grade.id,
+          gradeName: grade.name,
+          first: bestFirst.map(m => ({
+            name: m.student.name,
+            class: m.student.class,
+            result: m.first,
+            date: m.student.measurements[0].firstDate || ''
+          })),
+          second: bestSecond.map(m => ({
+            name: m.student.name,
+            class: m.student.class,
+            result: m.second,
+            date: m.student.measurements[0].secondDate || ''
+          }))
+        };
+      });
 
-  const navigateToClass = (gradeId: string, classId: string) => {
-    navigate(`/class/${gradeId}/${classId}`);
-  };
+      setTopPerformers(top);
+    }
+  }, [grades, students, sportId]);
 
   if (loading) {
     return (
@@ -317,34 +180,53 @@ export default function SportPage() {
             </div>
             
             <div className="space-y-4">
-              {gradeData.students.length > 0 ? (
-                gradeData.students.map((student, index) => (
-                  <div
-                    key={index}
-                    className={`p-3 rounded-lg ${
-                      index === 0 ? 'bg-yellow-50' :
-                      index === 1 ? 'bg-gray-50' :
-                      index === 2 ? 'bg-orange-50' :
-                      'bg-blue-50'
-                    }`}
-                  >
-                    <div className="font-medium">{student.name}</div>
-                    <div className="text-sm text-gray-600">כיתה {student.class}</div>
-                    <div className="mt-1 font-bold text-gray-800">
-                      {student.result} {sport.unit}
-                    </div>
-                    {student.date && (
-                      <div className="text-xs text-gray-500 mt-1">
-                        {student.date}
-                      </div>
-                    )}
-                  </div>
-                ))
-              ) : (
+              {gradeData.first.length > 0 && (
                 <div className="text-center text-gray-500 py-4">
-                  אין מדידות בשכבה זו
+                  המדידות הטובות ביותר בשכבה זו
                 </div>
               )}
+              {gradeData.first.map((item, index) => (
+                <div
+                  key={index}
+                  className={`p-3 rounded-lg ${
+                    index === 0 ? 'bg-yellow-50' :
+                    index === 1 ? 'bg-gray-50' :
+                    index === 2 ? 'bg-orange-50' :
+                    'bg-blue-50'
+                  }`}
+                >
+                  <div className="font-medium">{item.name}</div>
+                  <div className="text-sm text-gray-600">כיתה {item.class}</div>
+                  <div className="mt-1 font-bold text-gray-800">
+                    {item.result} {sport.unit}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="space-y-4 mt-4">
+              {gradeData.second.length > 0 && (
+                <div className="text-center text-gray-500 py-4">
+                  המדידות הטובות ביותר בשכבה זו
+                </div>
+              )}
+              {gradeData.second.map((item, index) => (
+                <div
+                  key={index}
+                  className={`p-3 rounded-lg ${
+                    index === 0 ? 'bg-yellow-50' :
+                    index === 1 ? 'bg-gray-50' :
+                    index === 2 ? 'bg-orange-50' :
+                    'bg-blue-50'
+                  }`}
+                >
+                  <div className="font-medium">{item.name}</div>
+                  <div className="text-sm text-gray-600">כיתה {item.class}</div>
+                  <div className="mt-1 font-bold text-gray-800">
+                    {item.result} {sport.unit}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         ))}
