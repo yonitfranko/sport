@@ -2,6 +2,7 @@ import { useParams } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { Trophy, ArrowLeft, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import XLSX from 'xlsx';
 
 interface TopStudent {
   name: string;
@@ -16,13 +17,20 @@ interface GradeTopStudents {
   students: TopStudent[];
 }
 
-interface SportType {
-  id: string;
+interface Student {
+  id: number;
   name: string;
-  description: string;
-  icon: string;
-  unit: string;
-  isLowerBetter: boolean;
+  gender: 'male' | 'female';
+  measurements: {
+    [key: string]: {
+      first: number | null;
+      second: number | null;
+      firstDate?: string | null;
+      secondDate?: string | null;
+    };
+  };
+  grade: string;
+  class: string;
 }
 
 interface Grade {
@@ -31,19 +39,128 @@ interface Grade {
   classes: string[];
 }
 
+interface Sport {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  unit: string;
+  isLowerBetter: boolean;
+}
+
 export default function SportPage() {
   const { sportId } = useParams();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [topPerformers, setTopPerformers] = useState<GradeTopStudents[]>([]);
-  const [openGrade, setOpenGrade] = useState<string | null>(null);
-  const [sport, setSport] = useState<SportType | null>(null);
+  const [students, setStudents] = useState<Student[]>([]);
   const [grades, setGrades] = useState<Grade[]>([]);
-  const [sports, setSports] = useState<SportType[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [openGrade, setOpenGrade] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [topPerformers, setTopPerformers] = useState<GradeTopStudents[]>([]);
+  const [sport, setSport] = useState<Sport | null>(null);
+  const [sports, setSports] = useState<Sport[]>([]);
 
   useEffect(() => {
     console.log('SportPage: Component mounted');
   }, []);
+
+  useEffect(() => {
+    const loadData = () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // טעינת תלמידים
+        const savedStudents = localStorage.getItem('students');
+        if (savedStudents) {
+          const allStudents: Student[] = JSON.parse(savedStudents);
+          setStudents(allStudents);
+        }
+
+        // טעינת הגדרות המערכת
+        const savedSettings = localStorage.getItem('systemSettings');
+        if (savedSettings) {
+          const settings = JSON.parse(savedSettings);
+          if (settings.grades) {
+            setGrades(settings.grades);
+          }
+        }
+      } catch (err) {
+        console.error('Error loading data:', err);
+        setError('שגיאה בטעינת נתונים');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, []);
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+        const newStudents: Student[] = jsonData.map((row: any) => ({
+          id: Math.random(),
+          name: row['שם'] || '',
+          gender: row['מגדר'] === 'זכר' ? 'male' : 'female',
+          measurements: {},
+          grade: row['כיתה'] || '',
+          class: row['שכבה'] || ''
+        }));
+
+        const existingStudents = localStorage.getItem('students');
+        const allStudents = existingStudents ? JSON.parse(existingStudents) : [];
+        const updatedStudents = [...allStudents, ...newStudents];
+        localStorage.setItem('students', JSON.stringify(updatedStudents));
+        setStudents(updatedStudents);
+        setUploadError(null);
+      } catch (err) {
+        console.error('Error processing file:', err);
+        setUploadError('שגיאה בעיבוד הקובץ');
+      }
+    };
+
+    reader.readAsArrayBuffer(file);
+  };
+
+  const getTopPerformers = (gradeId: string, classId: string) => {
+    const gradeStudents = students.filter(s => s.grade === gradeId && s.class === classId);
+    const sport = sportId ? gradeStudents[0]?.measurements[sportId] : null;
+    
+    if (!sport) return { boys: [], girls: [] };
+
+    const getBestResult = (student: Student) => {
+      const measurements = student.measurements[sportId];
+      if (!measurements) return -Infinity;
+      
+      const first = measurements.first || -Infinity;
+      const second = measurements.second || -Infinity;
+      
+      return Math.max(first, second);
+    };
+
+    const boys = gradeStudents
+      .filter(s => s.gender === 'male')
+      .sort((a: Student, b: Student) => getBestResult(b) - getBestResult(a))
+      .slice(0, 2);
+
+    const girls = gradeStudents
+      .filter(s => s.gender === 'female')
+      .sort((a: Student, b: Student) => getBestResult(b) - getBestResult(a))
+      .slice(0, 2);
+
+    return { boys, girls };
+  };
 
   useEffect(() => {
     const loadSettings = () => {
@@ -71,7 +188,7 @@ export default function SportPage() {
           return;
         }
 
-        const foundSport = settings.sports.find((s: SportType) => s.id === sportId);
+        const foundSport = settings.sports.find((s: Sport) => s.id === sportId);
         console.log('Found sport:', foundSport);
 
         if (!foundSport) {
@@ -83,12 +200,10 @@ export default function SportPage() {
         loadTopPerformers(foundSport, settings.grades);
       } catch (error) {
         console.error('Error in loadSettings:', error);
-      } finally {
-        setLoading(false);
       }
     };
 
-    const loadTopPerformers = (currentSport: SportType, currentGrades: Grade[]) => {
+    const loadTopPerformers = (currentSport: Sport, currentGrades: Grade[]) => {
       try {
         const studentsData = localStorage.getItem('students');
         if (!studentsData) {

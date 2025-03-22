@@ -2,7 +2,6 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Users, Medal, TrendingUp, ClipboardList, Edit2, Check, X, Trash2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
-import { Link } from 'react-router-dom';
 
 interface Measurement {
   first: number | null;
