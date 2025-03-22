@@ -93,7 +93,7 @@ export default function SportPage() {
   }, [sportId]);
 
   useEffect(() => {
-    if (grades.length > 0) {
+    if (grades.length > 0 && sport) {
       const top = grades.map(grade => {
         const gradeStudents = students.filter(s => grade.studentIds.includes(s.id));
         const measurements = gradeStudents.map(student => {
@@ -101,18 +101,20 @@ export default function SportPage() {
           return {
             student,
             first: measurement?.first || null,
-            second: measurement?.second || null
+            second: measurement?.second || null,
+            firstDate: measurement?.firstDate || '',
+            secondDate: measurement?.secondDate || ''
           };
         });
 
         const bestFirst = measurements
-          .filter((m): m is MeasurementResult & { first: number } => m.first !== null)
-          .sort((a, b) => a.first - b.first)
+          .filter((m): m is MeasurementResult & { first: number; second: number | null; firstDate: string; secondDate: string } => m.first !== null)
+          .sort((a, b) => sport.isLowerBetter ? a.first - b.first : b.first - a.first)
           .slice(0, 3);
 
         const bestSecond = measurements
-          .filter((m): m is MeasurementResult & { second: number } => m.second !== null)
-          .sort((a, b) => a.second - b.second)
+          .filter((m): m is MeasurementResult & { first: number | null; second: number; firstDate: string; secondDate: string } => m.second !== null)
+          .sort((a, b) => sport.isLowerBetter ? a.second - b.second : b.second - a.second)
           .slice(0, 3);
 
         return {
@@ -122,20 +124,20 @@ export default function SportPage() {
             name: m.student.name,
             class: m.student.class,
             result: m.first,
-            date: m.student.measurements[0].firstDate || ''
+            date: m.firstDate
           })),
           second: bestSecond.map(m => ({
             name: m.student.name,
             class: m.student.class,
             result: m.second,
-            date: m.student.measurements[0].secondDate || ''
+            date: m.secondDate
           }))
         };
       });
 
       setTopPerformers(top);
     }
-  }, [grades, students, sportId]);
+  }, [grades, students, sportId, sport]);
 
   if (loading) {
     return (
