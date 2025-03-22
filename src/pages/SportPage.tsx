@@ -47,6 +47,8 @@ interface MeasurementResult {
   student: Student;
   first: number | null;
   second: number | null;
+  firstDate: string;
+  secondDate: string;
 }
 
 interface Sport {
@@ -70,50 +72,57 @@ export default function SportPage() {
 
   useEffect(() => {
     const loadData = () => {
-      const studentsData = localStorage.getItem('students');
-      const gradesData = localStorage.getItem('grades');
-      const sportsData = localStorage.getItem('sports');
+      try {
+        const studentsData = localStorage.getItem('students');
+        const gradesData = localStorage.getItem('grades');
+        const sportsData = localStorage.getItem('sports');
 
-      if (studentsData && gradesData && sportsData) {
-        const allStudents = JSON.parse(studentsData);
-        const allGrades = JSON.parse(gradesData);
-        const allSports = JSON.parse(sportsData);
+        if (studentsData && gradesData && sportsData) {
+          const allStudents = JSON.parse(studentsData);
+          const allGrades = JSON.parse(gradesData);
+          const allSports = JSON.parse(sportsData);
 
-        const currentSport = allSports.find((s: Sport) => s.id === sportId);
-        if (currentSport) {
-          setSport(currentSport);
-          setStudents(allStudents);
-          setGrades(allGrades.filter((g: Grade) => g.sportId === sportId));
+          const currentSport = allSports.find((s: Sport) => s.id === sportId);
+          if (currentSport) {
+            setSport(currentSport);
+            setStudents(allStudents);
+            setGrades(allGrades.filter((g: Grade) => g.sportId === sportId));
+          }
         }
+      } catch (error) {
+        console.error('Error loading data:', error);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     loadData();
   }, [sportId]);
 
   useEffect(() => {
-    if (grades.length > 0 && sport) {
+    if (!grades.length || !sport || !students.length) return;
+
+    try {
       const top = grades.map(grade => {
         const gradeStudents = students.filter(s => grade.studentIds.includes(s.id));
         const measurements = gradeStudents.map(student => {
           const measurement = student.measurements.find((m: Measurement) => m.sportId === sportId && m.gradeId === grade.id);
           return {
             student,
-            first: measurement?.first || null,
-            second: measurement?.second || null,
-            firstDate: measurement?.firstDate || '',
-            secondDate: measurement?.secondDate || ''
+            first: measurement?.first ?? null,
+            second: measurement?.second ?? null,
+            firstDate: measurement?.firstDate ?? '',
+            secondDate: measurement?.secondDate ?? ''
           };
         });
 
         const bestFirst = measurements
-          .filter((m): m is MeasurementResult & { first: number; second: number | null; firstDate: string; secondDate: string } => m.first !== null)
+          .filter((m): m is MeasurementResult & { first: number } => m.first !== null)
           .sort((a, b) => sport.isLowerBetter ? a.first - b.first : b.first - a.first)
           .slice(0, 3);
 
         const bestSecond = measurements
-          .filter((m): m is MeasurementResult & { first: number | null; second: number; firstDate: string; secondDate: string } => m.second !== null)
+          .filter((m): m is MeasurementResult & { second: number } => m.second !== null)
           .sort((a, b) => sport.isLowerBetter ? a.second - b.second : b.second - a.second)
           .slice(0, 3);
 
@@ -136,6 +145,8 @@ export default function SportPage() {
       });
 
       setTopPerformers(top);
+    } catch (error) {
+      console.error('Error processing measurements:', error);
     }
   }, [grades, students, sportId, sport]);
 
