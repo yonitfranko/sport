@@ -4,23 +4,7 @@ import {
   Save, 
   Trash2, 
   Plus, 
-  Bell, 
-  BellOff, 
-  Clock, 
-  Ruler, 
-  Scale, 
-  Timer, 
-  Target, 
-  AlertCircle, 
-  CheckCircle2, 
-  XCircle, 
-  Mail, 
-  Phone, 
-  MessageSquare,
-  FileText,
   Download,
-  ChevronDown,
-  ChevronUp,
   Settings as SettingsIcon
 } from 'lucide-react';
 
