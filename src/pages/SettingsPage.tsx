@@ -3,12 +3,19 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Save, 
   Trash2, 
-  Plus, 
   Download,
   Settings as SettingsIcon,
   ChevronDown,
   X
 } from 'lucide-react';
+
+// רשימת אייקונים מוגדרת מראש
+const sportIcons = [
+  '🏃', '🏃‍♂️', '🏃‍♀️', '⚽', '🏀', '🏈', '⚾', '🏐', '🏉', '🎾', '🏓', '🏸', '🏒', '🏑', '🏏',
+  '🏊', '🏊‍♂️', '🏊‍♀️', '🚣', '🚣‍♂️', '🚣‍♀️', '🏋️', '🏋️‍♂️', '🏋️‍♀️', '🚴', '🚴‍♂️', '🚴‍♀️',
+  '🤸', '🤸‍♂️', '🤸‍♀️', '🤾', '🤾‍♂️', '🤾‍♀️', '🤺', '🏅', '🎖️', '🏆', '🥇', '🥈', '🥉',
+  '⚡', '💪', '🎯', '🎪', '🎨', '🎭', '🎪', '🎪', '🎪', '🎪', '🎪', '🎪', '🎪', '🎪', '🎪'
+];
 
 interface SystemSettings {
   schoolName: string;
@@ -108,13 +115,7 @@ export default function SettingsPage() {
   const [newClass, setNewClass] = useState('');
   const [isGradesAccordionOpen, setIsGradesAccordionOpen] = useState(true);
   const [isSportsAccordionOpen, setIsSportsAccordionOpen] = useState(true);
-
-  const commonIcons = [
-    '🏃', '🏃‍♂️', '🏃‍♀️', '⚽', '🏀', '🏈', '⚾', '🏐', '🏉', '🎾', '🏓', '🏸', '🏒', '🏑', '🏏',
-    '🏊', '🏊‍♂️', '🏊‍♀️', '🚴', '🚴‍♂️', '🚴‍♀️', '🚵', '🚵‍♂️', '🚵‍♀️', '🏋️', '🏋️‍♂️', '🏋️‍♀️',
-    '🤸', '🤸‍♂️', '🤸‍♀️', '⛹️', '⛹️‍♂️', '⛹️‍♀️', '🏅', '🎖️', '🏆', '🎯', '🎳', '🏹', '🤺',
-    '🏂', '⛷️', '🏎️', '🏍️', '🤾', '🤾‍♂️', '🤾‍♀️', '🏌️', '🏌️‍♂️', '🏌️‍♀️', '🏇', '🤹', '🤹‍♂️', '🤹‍♀️'
-  ];
+  const [showIconPicker, setShowIconPicker] = useState(false);
 
   useEffect(() => {
     // טעינת הגדרות מ-localStorage
@@ -285,7 +286,7 @@ export default function SettingsPage() {
                 className="border rounded px-4 py-2 w-32"
                 placeholder="שנה"
               />
-              <span className="text-gray-600">תשפ"ד</span>
+              <span className="text-gray-600">תשפ"ה</span>
             </div>
           </div>
         </div>
@@ -423,13 +424,43 @@ export default function SettingsPage() {
                     placeholder="תיאור"
                     className="p-2 border rounded"
                   />
-                  <input
-                    type="text"
-                    value={newSport.icon}
-                    onChange={(e) => setNewSport({ ...newSport, icon: e.target.value })}
-                    placeholder="אייקון"
-                    className="p-2 border rounded"
-                  />
+                  <div className="relative">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={newSport.icon}
+                        onChange={(e) => setNewSport({ ...newSport, icon: e.target.value })}
+                        placeholder="בחר אייקון"
+                        className="p-2 border rounded flex-1"
+                        readOnly
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowIconPicker(!showIconPicker)}
+                        className="p-2 border rounded hover:bg-gray-100"
+                      >
+                        {newSport.icon || '🎯'}
+                      </button>
+                    </div>
+                    {showIconPicker && (
+                      <div className="absolute z-10 mt-1 bg-white border rounded-lg shadow-lg p-2 max-h-48 overflow-y-auto">
+                        <div className="grid grid-cols-8 gap-1">
+                          {sportIcons.map((icon) => (
+                            <button
+                              key={icon}
+                              onClick={() => {
+                                setNewSport({ ...newSport, icon });
+                                setShowIconPicker(false);
+                              }}
+                              className="p-2 hover:bg-gray-100 rounded text-xl"
+                            >
+                              {icon}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   <input
                     type="text"
                     value={newSport.unit}
