@@ -71,11 +71,10 @@ export default function SportPage() {
         setLoading(true);
         setError(null);
 
-        // טעינת תלמידים
+        // טעינת תלמידים מה-localStorage
         const savedStudents = localStorage.getItem('students');
         if (savedStudents) {
-          const allStudents: Student[] = JSON.parse(savedStudents);
-          setStudents(allStudents);
+          setStudents(JSON.parse(savedStudents));
         }
 
         // טעינת הגדרות המערכת
@@ -135,28 +134,26 @@ export default function SportPage() {
 
   const getTopPerformers = (gradeId: string, classId: string) => {
     const gradeStudents = students.filter(s => s.grade === gradeId && s.class === classId);
-    const sport = sportId ? gradeStudents[0]?.measurements[sportId] : null;
     
-    if (!sport) return { boys: [], girls: [] };
-
     const getBestResult = (student: Student) => {
-      const measurements = student.measurements[sportId];
-      if (!measurements) return -Infinity;
+      const measurements = student.measurements;
+      if (!measurements) return 0;
       
-      const first = measurements.first || -Infinity;
-      const second = measurements.second || -Infinity;
-      
-      return Math.max(first, second);
+      return Object.values(measurements).reduce((best, measurement) => {
+        if (!measurement.first || !measurement.second) return best;
+        const improvement = ((measurement.second - measurement.first) / measurement.first) * 100;
+        return Math.max(best, improvement);
+      }, 0);
     };
 
     const boys = gradeStudents
       .filter(s => s.gender === 'male')
-      .sort((a: Student, b: Student) => getBestResult(b) - getBestResult(a))
+      .sort((a, b) => getBestResult(b) - getBestResult(a))
       .slice(0, 2);
 
     const girls = gradeStudents
       .filter(s => s.gender === 'female')
-      .sort((a: Student, b: Student) => getBestResult(b) - getBestResult(a))
+      .sort((a, b) => getBestResult(b) - getBestResult(a))
       .slice(0, 2);
 
     return { boys, girls };
@@ -274,7 +271,7 @@ export default function SportPage() {
   };
 
   const navigateToClass = (gradeId: string, classId: string) => {
-    navigate(`/class/${gradeId}/${classId}?sport=${sportId}`);
+    navigate(`/class/${gradeId}/${classId}`);
   };
 
   if (loading) {
@@ -375,7 +372,7 @@ export default function SportPage() {
                   {grade.classes.map(classId => (
                     <button
                       key={classId}
-                      onClick={() => navigate(`/class/${grade.id}/${classId}?sport=${sportId}`)}
+                      onClick={() => navigate(`/class/${grade.id}/${classId}`)}
                       className="bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg p-3 text-center transition-colors"
                     >
                       כיתה {classId}
