@@ -61,7 +61,7 @@ interface Sport {
 }
 
 export default function SportPage() {
-  const { sportId } = useParams();
+  const { sportId } = useParams<{ sportId: string }>();
   const navigate = useNavigate();
   const [students, setStudents] = useState<Student[]>([]);
   const [grades, setGrades] = useState<Grade[]>([]);
@@ -104,7 +104,7 @@ export default function SportPage() {
 
     try {
       const top = grades.map(grade => {
-        const gradeStudents = students.filter(s => grade.studentIds.includes(s.id));
+        const gradeStudents = students.filter((s: Student) => grade.studentIds.includes(s.id));
         const measurements = gradeStudents.map(student => {
           const measurement = student.measurements.find((m: Measurement) => m.sportId === sportId && m.gradeId === grade.id);
           return {
