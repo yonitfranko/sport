@@ -120,6 +120,24 @@ export default function HomePage() {
         console.error('Error loading system settings:', error);
       }
     }
+
+    // Initialize sports data if not exists
+    const sportsData = localStorage.getItem('sports');
+    if (!sportsData) {
+      localStorage.setItem('sports', JSON.stringify(sportTypes));
+    }
+
+    // Initialize grades data if not exists
+    const gradesData = localStorage.getItem('grades');
+    if (!gradesData) {
+      localStorage.setItem('grades', JSON.stringify(defaultGrades));
+    }
+
+    // Initialize empty students array if not exists
+    const studentsData = localStorage.getItem('students');
+    if (!studentsData) {
+      localStorage.setItem('students', JSON.stringify([]));
+    }
   }, []);
 
   // האזנה לשינויים ב-localStorage
