@@ -89,8 +89,8 @@ export default function SportPage() {
             setGrades(allGrades.filter((g: Grade) => g.sportId === sportId));
           }
         }
-      } catch (error) {
-        console.error('Error loading data:', error);
+      } catch (err) {
+        console.error('Error loading data:', err);
       } finally {
         setLoading(false);
       }
@@ -100,7 +100,7 @@ export default function SportPage() {
   }, [sportId]);
 
   useEffect(() => {
-    if (!grades.length || !sport || !students.length) return;
+    if (!grades.length || !sport || !students.length || !sportId) return;
 
     try {
       const top = grades.map(grade => {
@@ -145,8 +145,8 @@ export default function SportPage() {
       });
 
       setTopPerformers(top);
-    } catch (error) {
-      console.error('Error processing measurements:', error);
+    } catch (err) {
+      console.error('Error processing measurements:', err);
     }
   }, [grades, students, sportId, sport]);
 
