@@ -12,8 +12,8 @@ interface TopStudent {
 interface GradeTopStudents {
   gradeId: string;
   gradeName: string;
-  first: TopStudent[];
-  second: TopStudent[];
+  male: TopStudent[];
+  female: TopStudent[];
 }
 
 interface Student {
@@ -125,7 +125,6 @@ export default function SportPage() {
         console.log(`Processing grade ${grade.name}, found ${gradeStudents.length} students`);
 
         const measurements = gradeStudents.map(student => {
-          // Check if student has measurements array
           if (!Array.isArray(student.measurements)) {
             console.log(`Student ${student.name} has no measurements array`);
             return null;
@@ -137,46 +136,58 @@ export default function SportPage() {
             return null;
           }
           
+          // Get the best result between first and second measurement
+          const bestResult = measurement.first !== null && measurement.second !== null
+            ? (sport.isLowerBetter 
+                ? Math.min(measurement.first, measurement.second)
+                : Math.max(measurement.first, measurement.second))
+            : measurement.first !== null
+              ? measurement.first
+              : measurement.second;
+
+          if (bestResult === null) {
+            return null;
+          }
+
           return {
             student,
-            first: measurement.first,
-            second: measurement.second,
-            firstDate: measurement.firstDate ?? '',
-            secondDate: measurement.secondDate ?? ''
+            result: bestResult,
+            date: measurement.firstDate ?? measurement.secondDate ?? ''
           };
         }).filter((m): m is NonNullable<typeof m> => m !== null);
 
         console.log(`Found ${measurements.length} valid measurements for grade ${grade.name}`);
 
-        const bestFirst = measurements
-          .filter((m): m is MeasurementResult & { first: number } => m.first !== null)
-          .sort((a, b) => sport.isLowerBetter ? a.first - b.first : b.first - a.first)
-          .slice(0, 4);
+        // Sort by best result and split by gender
+        const sortedMale = measurements
+          .filter((m): m is MeasurementResult & { result: number; date: string } => m.student.gender === 'male')
+          .sort((a, b) => sport.isLowerBetter ? a.result - b.result : b.result - a.result)
+          .slice(0, 2);
 
-        const bestSecond = measurements
-          .filter((m): m is MeasurementResult & { second: number } => m.second !== null)
-          .sort((a, b) => sport.isLowerBetter ? a.second - b.second : b.second - a.second)
-          .slice(0, 4);
+        const sortedFemale = measurements
+          .filter((m): m is MeasurementResult & { result: number; date: string } => m.student.gender === 'female')
+          .sort((a, b) => sport.isLowerBetter ? a.result - b.result : b.result - a.result)
+          .slice(0, 2);
 
         console.log(`Top performers for grade ${grade.name}:`, {
-          firstCount: bestFirst.length,
-          secondCount: bestSecond.length
+          maleCount: sortedMale.length,
+          femaleCount: sortedFemale.length
         });
 
         return {
           gradeId: grade.id,
           gradeName: grade.name,
-          first: bestFirst.map(m => ({
+          male: sortedMale.map(m => ({
             name: m.student.name,
             class: m.student.class,
-            result: m.first,
-            date: m.firstDate
+            result: m.result,
+            date: m.date
           })),
-          second: bestSecond.map(m => ({
+          female: sortedFemale.map(m => ({
             name: m.student.name,
             class: m.student.class,
-            result: m.second,
-            date: m.secondDate
+            result: m.result,
+            date: m.date
           }))
         };
       });
@@ -234,29 +245,26 @@ export default function SportPage() {
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {topPerformers.map(gradeData => (
+          {grades.map(grade => (
             <div
-              key={gradeData.gradeId}
+              key={grade.id}
               className="bg-white rounded-xl shadow-lg p-6"
             >
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-gray-800">{gradeData.gradeName}</h2>
+                <h2 className="text-xl font-bold text-gray-800">{grade.name}</h2>
                 <Trophy className="text-yellow-500" size={24} />
               </div>
               
               <div className="space-y-4">
-                {gradeData.first.length > 0 && (
-                  <div className="text-center text-gray-500 py-2">
-                    מדידה ראשונה
-                  </div>
-                )}
-                {gradeData.first.map((item, index) => (
+                <div className="text-center text-gray-500 py-2">
+                  בנים
+                </div>
+                {topPerformers.find(g => g.gradeId === grade.id)?.male.map((item, index) => (
                   <div
                     key={index}
                     className={`p-3 rounded-lg ${
                       index === 0 ? 'bg-yellow-50' :
                       index === 1 ? 'bg-gray-50' :
-                      index === 2 ? 'bg-orange-50' :
                       'bg-blue-50'
                     }`}
                   >
@@ -271,22 +279,23 @@ export default function SportPage() {
                       </div>
                     )}
                   </div>
-                ))}
+                )) || (
+                  <div className="text-center text-gray-500 py-2">
+                    אין נתונים זמינים
+                  </div>
+                )}
               </div>
 
               <div className="space-y-4 mt-4">
-                {gradeData.second.length > 0 && (
-                  <div className="text-center text-gray-500 py-2">
-                    מדידה שנייה
-                  </div>
-                )}
-                {gradeData.second.map((item, index) => (
+                <div className="text-center text-gray-500 py-2">
+                  בנות
+                </div>
+                {topPerformers.find(g => g.gradeId === grade.id)?.female.map((item, index) => (
                   <div
                     key={index}
                     className={`p-3 rounded-lg ${
                       index === 0 ? 'bg-yellow-50' :
                       index === 1 ? 'bg-gray-50' :
-                      index === 2 ? 'bg-orange-50' :
                       'bg-blue-50'
                     }`}
                   >
@@ -301,7 +310,11 @@ export default function SportPage() {
                       </div>
                     )}
                   </div>
-                ))}
+                )) || (
+                  <div className="text-center text-gray-500 py-2">
+                    אין נתונים זמינים
+                  </div>
+                )}
               </div>
             </div>
           ))}
