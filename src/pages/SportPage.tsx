@@ -77,17 +77,27 @@ export default function SportPage() {
         const gradesData = localStorage.getItem('grades');
         const sportsData = localStorage.getItem('sports');
 
-        if (studentsData && gradesData && sportsData) {
-          const allStudents = JSON.parse(studentsData);
-          const allGrades = JSON.parse(gradesData);
-          const allSports = JSON.parse(sportsData);
+        console.log('Loading data:', { studentsData, gradesData, sportsData, sportId });
 
-          const currentSport = allSports.find((s: Sport) => s.id === sportId);
+        if (studentsData && gradesData && sportsData) {
+          const allStudents: Student[] = JSON.parse(studentsData);
+          const allGrades: Grade[] = JSON.parse(gradesData);
+          const allSports: Sport[] = JSON.parse(sportsData);
+
+          console.log('Parsed data:', { allStudents, allGrades, allSports });
+
+          const currentSport = allSports.find(s => s.id === sportId);
+          console.log('Found sport:', currentSport);
+
           if (currentSport) {
             setSport(currentSport);
             setStudents(allStudents);
-            setGrades(allGrades.filter((g: Grade) => g.sportId === sportId));
+            setGrades(allGrades.filter(g => g.sportId === sportId));
+          } else {
+            console.error('Sport not found with id:', sportId);
           }
+        } else {
+          console.error('Missing data:', { studentsData: !!studentsData, gradesData: !!gradesData, sportsData: !!sportsData });
         }
       } catch (err) {
         console.error('Error loading data:', err);
@@ -104,9 +114,9 @@ export default function SportPage() {
 
     try {
       const top = grades.map(grade => {
-        const gradeStudents = students.filter((s: Student) => grade.studentIds.includes(s.id));
+        const gradeStudents = students.filter(s => grade.studentIds.includes(s.id));
         const measurements = gradeStudents.map(student => {
-          const measurement = student.measurements.find((m: Measurement) => m.sportId === sportId && m.gradeId === grade.id);
+          const measurement = student.measurements.find(m => m.sportId === sportId && m.gradeId === grade.id);
           if (!measurement) return null;
           
           return {
@@ -120,13 +130,13 @@ export default function SportPage() {
 
         const bestFirst = measurements
           .filter((m): m is MeasurementResult & { first: number } => m.first !== null)
-          .sort((a: MeasurementResult, b: MeasurementResult) => sport.isLowerBetter ? a.first! - b.first! : b.first! - a.first!)
-          .slice(0, 3);
+          .sort((a, b) => sport.isLowerBetter ? a.first - b.first : b.first - a.first)
+          .slice(0, 4);
 
         const bestSecond = measurements
           .filter((m): m is MeasurementResult & { second: number } => m.second !== null)
-          .sort((a: MeasurementResult, b: MeasurementResult) => sport.isLowerBetter ? a.second! - b.second! : b.second! - a.second!)
-          .slice(0, 3);
+          .sort((a, b) => sport.isLowerBetter ? a.second - b.second : b.second - a.second)
+          .slice(0, 4);
 
         return {
           gradeId: grade.id,
@@ -160,7 +170,13 @@ export default function SportPage() {
     );
   }
 
-  if (!sport) return null;
+  if (!sport) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-xl text-gray-600">לא נמצא ענף ספורט</div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -183,11 +199,11 @@ export default function SportPage() {
       </div>
 
       {/* רשימת המצטיינים לפי שכבות */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {topPerformers.map(gradeData => (
           <div
             key={gradeData.gradeId}
-            className="bg-white rounded-xl shadow-lg p-6 transform hover:scale-105 transition-transform"
+            className="bg-white rounded-xl shadow-lg p-6"
           >
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-gray-800">{gradeData.gradeName}</h2>
@@ -196,8 +212,8 @@ export default function SportPage() {
             
             <div className="space-y-4">
               {gradeData.first.length > 0 && (
-                <div className="text-center text-gray-500 py-4">
-                  המדידות הטובות ביותר בשכבה זו
+                <div className="text-center text-gray-500 py-2">
+                  מדידה ראשונה
                 </div>
               )}
               {gradeData.first.map((item, index) => (
@@ -215,14 +231,19 @@ export default function SportPage() {
                   <div className="mt-1 font-bold text-gray-800">
                     {item.result} {sport.unit}
                   </div>
+                  {item.date && (
+                    <div className="text-xs text-gray-500 mt-1">
+                      {new Date(item.date).toLocaleDateString('he-IL')}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
 
             <div className="space-y-4 mt-4">
               {gradeData.second.length > 0 && (
-                <div className="text-center text-gray-500 py-4">
-                  המדידות הטובות ביותר בשכבה זו
+                <div className="text-center text-gray-500 py-2">
+                  מדידה שנייה
                 </div>
               )}
               {gradeData.second.map((item, index) => (
@@ -240,6 +261,11 @@ export default function SportPage() {
                   <div className="mt-1 font-bold text-gray-800">
                     {item.result} {sport.unit}
                   </div>
+                  {item.date && (
+                    <div className="text-xs text-gray-500 mt-1">
+                      {new Date(item.date).toLocaleDateString('he-IL')}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -269,7 +295,7 @@ export default function SportPage() {
                   {grade.classes.map(classId => (
                     <button
                       key={classId}
-                      onClick={() => navigate(`/class/${grade.id}/${classId}`)}
+                      onClick={() => navigate(`/class/${grade.id}/${classId}/${sportId}`)}
                       className="bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg p-3 text-center transition-colors"
                     >
                       כיתה {classId}
