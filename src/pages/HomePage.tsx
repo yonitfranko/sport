@@ -46,11 +46,11 @@ interface SystemSettings {
 }
 
 const sportTypes: SportType[] = [
-  { id: 'sprint', name: 'ספרינט', description: '100 מטר', icon: '🏃', unit: 'שניות', isLowerBetter: false },
-  { id: 'long_jump', name: 'קפיצה למרחק', description: 'קפיצה למרחק', icon: '↔️', unit: 'מטרים', isLowerBetter: false },
-  { id: 'high_jump', name: 'קפיצה לגובה', description: 'קפיצה לגובה', icon: '↕️', unit: 'מטרים', isLowerBetter: false },
-  { id: 'ball_throw', name: 'זריקת כדור', description: 'זריקת כדור', icon: '🏐', unit: 'מטרים', isLowerBetter: false },
-  { id: 'long_run', name: 'ריצה ארוכה', description: '2000 מטר', icon: '‍♂️', unit: 'דקות', isLowerBetter: false }
+  { id: 'sprint', name: 'ריצה קצרה', description: 'ריצה של 100 מטר', icon: '🏃', unit: 'שניות', isLowerBetter: true },
+  { id: 'long_jump', name: 'קפיצה לרוחק', description: 'קפיצה לרוחק', icon: '🦘', unit: 'מטרים', isLowerBetter: false },
+  { id: 'high_jump', name: 'קפיצה לגובה', description: 'קפיצה לגובה', icon: '⬆️', unit: 'מטרים', isLowerBetter: false },
+  { id: 'ball_throw', name: 'זריקת כדור', description: 'זריקת כדור', icon: '⚾', unit: 'מטרים', isLowerBetter: false },
+  { id: 'long_run', name: 'ריצה ארוכה', description: 'ריצה של 1000 מטר', icon: '🏃', unit: 'דקות', isLowerBetter: true }
 ];
 
 // ברירת מחדל לשכבות

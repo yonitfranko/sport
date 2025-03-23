@@ -1,5 +1,5 @@
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { Users, Medal, TrendingUp, ClipboardList, Edit2, Check, X, Trash2 } from 'lucide-react';
+import { Users, Medal, TrendingUp, ClipboardList, Edit2, Check, X, Trash2, ArrowLeft } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 
@@ -103,18 +103,63 @@ export default function ClassPage() {
 
     // טעינת הגדרות המערכת
     const loadSettings = () => {
-      const savedSettings = localStorage.getItem('systemSettings');
-      if (savedSettings) {
-        const settings = JSON.parse(savedSettings);
-        if (settings.sports) {
-          setSports(settings.sports);
+      try {
+        const savedSettings = localStorage.getItem('systemSettings');
+        console.log('Saved settings from localStorage:', savedSettings); // DEBUG
+        
+        if (savedSettings) {
+          const settings = JSON.parse(savedSettings);
+          console.log('Parsed settings:', settings); // DEBUG
+          
+          if (settings.sports) {
+            console.log('Setting sports:', settings.sports); // DEBUG
+            setSports(settings.sports);
+          } else {
+            console.log('No sports found in settings, using defaults'); // DEBUG
+            setSports([
+              { id: 'sprint', name: 'ריצה קצרה', description: 'ריצה של 100 מטר', icon: '🏃', unit: 'שניות', isLowerBetter: true },
+              { id: 'long_jump', name: 'קפיצה לרוחק', description: 'קפיצה לרוחק', icon: '🦘', unit: 'מטרים', isLowerBetter: false },
+              { id: 'high_jump', name: 'קפיצה לגובה', description: 'קפיצה לגובה', icon: '⬆️', unit: 'מטרים', isLowerBetter: false },
+              { id: 'ball_throw', name: 'זריקת כדור', description: 'זריקת כדור', icon: '⚾', unit: 'מטרים', isLowerBetter: false },
+              { id: 'long_run', name: 'ריצה ארוכה', description: 'ריצה של 1000 מטר', icon: '🏃', unit: 'דקות', isLowerBetter: true }
+            ]);
+          }
+        } else {
+          console.log('No settings found in localStorage, using defaults'); // DEBUG
+          setSports([
+            { id: 'sprint', name: 'ריצה קצרה', description: 'ריצה של 100 מטר', icon: '🏃', unit: 'שניות', isLowerBetter: true },
+            { id: 'long_jump', name: 'קפיצה לרוחק', description: 'קפיצה לרוחק', icon: '🦘', unit: 'מטרים', isLowerBetter: false },
+            { id: 'high_jump', name: 'קפיצה לגובה', description: 'קפיצה לגובה', icon: '⬆️', unit: 'מטרים', isLowerBetter: false },
+            { id: 'ball_throw', name: 'זריקת כדור', description: 'זריקת כדור', icon: '⚾', unit: 'מטרים', isLowerBetter: false },
+            { id: 'long_run', name: 'ריצה ארוכה', description: 'ריצה של 1000 מטר', icon: '🏃', unit: 'דקות', isLowerBetter: true }
+          ]);
         }
+      } catch (err) {
+        console.error('Error loading settings:', err);
+        // במקרה של שגיאה, נשתמש בהגדרות ברירת מחדל
+        setSports([
+          { id: 'sprint', name: 'ריצה קצרה', description: 'ריצה של 100 מטר', icon: '🏃', unit: 'שניות', isLowerBetter: true },
+          { id: 'long_jump', name: 'קפיצה לרוחק', description: 'קפיצה לרוחק', icon: '🦘', unit: 'מטרים', isLowerBetter: false },
+          { id: 'high_jump', name: 'קפיצה לגובה', description: 'קפיצה לגובה', icon: '⬆️', unit: 'מטרים', isLowerBetter: false },
+          { id: 'ball_throw', name: 'זריקת כדור', description: 'זריקת כדור', icon: '⚾', unit: 'מטרים', isLowerBetter: false },
+          { id: 'long_run', name: 'ריצה ארוכה', description: 'ריצה של 1000 מטר', icon: '🏃', unit: 'דקות', isLowerBetter: true }
+        ]);
       }
     };
 
+    // טעינת הספורט הנבחר מה-URL
+    const params = new URLSearchParams(location.search);
+    const sportId = params.get('sport');
+    console.log('Sport ID from URL:', sportId); // DEBUG
+    
+    if (sportId) {
+      console.log('Setting selected sport:', sportId); // DEBUG
+      setSelectedSport(sportId);
+    }
+
     loadStudents();
     loadSettings();
-  }, [gradeId, classId]);
+  }, [gradeId, classId, location.search]);
 
   // אם הדף בטעינה, מציג אנימציית טעינה
   if (loading) {
@@ -343,33 +388,40 @@ export default function ClassPage() {
   };
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">כיתה {classId}</h2>
+    <div className="p-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Users size={32} className="text-blue-500" />
+          <div>
+            <h1 className="text-2xl font-bold">כיתה {classId}</h1>
+            <div className="text-gray-600">שכבה {gradeId}</div>
+          </div>
+        </div>
         <button
           onClick={goBack}
-          className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600"
+          className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
         >
+          <ArrowLeft size={20} />
           חזרה
         </button>
       </div>
 
-      {/* Sports Section */}
-      <div className="bg-white rounded-xl shadow p-6 mb-6">
-        <h3 className="text-lg font-bold text-gray-700 mb-4">ענפי ספורט</h3>
-        <div className="text-gray-500 text-sm mb-4">
-          בחרו ענף ספורט כדי להזין מדידות לתלמידים. כל ענף מציג את יחידת המידה שלו (שניות, מטרים, דקות).
-        </div>
+      {/* Sports Grid */}
+      <div className="bg-white rounded-xl shadow p-6">
+        <h2 className="text-xl font-bold text-gray-800 mb-4">ענפי ספורט</h2>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           {sports.map(sport => (
             <button
               key={sport.id}
-              onClick={() => setSelectedSport(sport.id)}
-              className={`${getButtonColorClass(sport.id)} rounded-lg p-4 text-white hover:opacity-90 transition-all text-right block w-full`}
+              onClick={() => {
+                console.log('Navigating to sport:', sport.id); // DEBUG
+                setSelectedSport(sport.id);
+              }}
+              className={`flex flex-col items-center justify-center p-4 rounded-lg transition-all transform hover:scale-105 ${getButtonColorClass(sport.id)} text-white`}
             >
-              <div className="text-2xl mb-2">{sport.icon}</div>
-              <div className="font-medium">{sport.name}</div>
-              <div className="text-sm opacity-90">{sport.description}</div>
+              <span className="text-3xl mb-2">{sport.icon}</span>
+              <span className="font-medium text-center">{sport.name}</span>
             </button>
           ))}
         </div>
