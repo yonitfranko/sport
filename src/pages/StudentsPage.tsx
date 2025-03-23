@@ -50,7 +50,23 @@ export default function StudentsPage() {
           const settings = JSON.parse(savedSettings);
           if (settings.sports) {
             setSports(settings.sports);
+          } else {
+            setSports([
+              { id: 'sprint', name: 'ריצה קצרה', description: 'ריצה של 100 מטר', icon: '🏃', unit: 'שניות', isLowerBetter: true },
+              { id: 'long_jump', name: 'קפיצה לרוחק', description: 'קפיצה לרוחק', icon: '🦘', unit: 'מטרים', isLowerBetter: false },
+              { id: 'high_jump', name: 'קפיצה לגובה', description: 'קפיצה לגובה', icon: '⬆️', unit: 'מטרים', isLowerBetter: false },
+              { id: 'ball_throw', name: 'זריקת כדור', description: 'זריקת כדור', icon: '⚾', unit: 'מטרים', isLowerBetter: false },
+              { id: 'long_run', name: 'ריצה ארוכה', description: 'ריצה של 1000 מטר', icon: '🏃', unit: 'דקות', isLowerBetter: true }
+            ]);
           }
+        } else {
+          setSports([
+            { id: 'sprint', name: 'ריצה קצרה', description: 'ריצה של 100 מטר', icon: '🏃', unit: 'שניות', isLowerBetter: true },
+            { id: 'long_jump', name: 'קפיצה לרוחק', description: 'קפיצה לרוחק', icon: '🦘', unit: 'מטרים', isLowerBetter: false },
+            { id: 'high_jump', name: 'קפיצה לגובה', description: 'קפיצה לגובה', icon: '⬆️', unit: 'מטרים', isLowerBetter: false },
+            { id: 'ball_throw', name: 'זריקת כדור', description: 'זריקת כדור', icon: '⚾', unit: 'מטרים', isLowerBetter: false },
+            { id: 'long_run', name: 'ריצה ארוכה', description: 'ריצה של 1000 מטר', icon: '🏃', unit: 'דקות', isLowerBetter: true }
+          ]);
         }
 
         // טעינת תלמידים
