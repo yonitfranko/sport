@@ -118,12 +118,12 @@ export default function SportPage() {
 
         const bestFirst = measurements
           .filter((m): m is MeasurementResult & { first: number } => m.first !== null)
-          .sort((a, b) => sport.isLowerBetter ? a.first - b.first : b.first - a.first)
+          .sort((a: MeasurementResult, b: MeasurementResult) => sport.isLowerBetter ? a.first! - b.first! : b.first! - a.first!)
           .slice(0, 3);
 
         const bestSecond = measurements
           .filter((m): m is MeasurementResult & { second: number } => m.second !== null)
-          .sort((a, b) => sport.isLowerBetter ? a.second - b.second : b.second - a.second)
+          .sort((a: MeasurementResult, b: MeasurementResult) => sport.isLowerBetter ? a.second! - b.second! : b.second! - a.second!)
           .slice(0, 3);
 
         return {
