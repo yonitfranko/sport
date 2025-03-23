@@ -32,17 +32,6 @@ interface SportType {
   isLowerBetter: boolean;
 }
 
-const getButtonColorClass = (sportId: string) => {
-  const colorMap: { [key: string]: string } = {
-    'sprint': 'bg-teal-500 hover:bg-teal-600',
-    'long_jump': 'bg-indigo-500 hover:bg-indigo-600',
-    'high_jump': 'bg-purple-500 hover:bg-purple-600',
-    'ball_throw': 'bg-amber-500 hover:bg-amber-600',
-    'long_run': 'bg-rose-500 hover:bg-rose-600'
-  };
-  return colorMap[sportId] || 'bg-gray-500 hover:bg-gray-600';
-};
-
 const getCurrentDate = () => {
   const today = new Date();
   return today.toISOString().split('T')[0];
@@ -418,10 +407,15 @@ export default function ClassPage() {
                 console.log('Navigating to sport:', sport.id); // DEBUG
                 setSelectedSport(sport.id);
               }}
-              className={`flex flex-col items-center justify-center p-4 rounded-lg transition-all transform hover:scale-105 ${getButtonColorClass(sport.id)} text-white`}
+              className={`flex flex-col items-center justify-center p-4 rounded-lg transition-all transform hover:scale-105 ${
+                selectedSport === sport.id 
+                  ? 'bg-blue-500 text-white' 
+                  : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+              }`}
             >
               <span className="text-3xl mb-2">{sport.icon}</span>
               <span className="font-medium text-center">{sport.name}</span>
+              <span className="text-sm text-center mt-1 opacity-75">{sport.description}</span>
             </button>
           ))}
         </div>
