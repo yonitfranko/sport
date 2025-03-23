@@ -149,12 +149,12 @@ export default function SportPage() {
         console.log(`Found ${measurements.length} valid measurements for grade ${grade.name}`);
 
         const bestFirst = measurements
-          .filter((m): m is typeof m & { first: number } => m.first !== null)
+          .filter((m): m is MeasurementResult & { first: number } => m.first !== null)
           .sort((a, b) => sport.isLowerBetter ? a.first - b.first : b.first - a.first)
           .slice(0, 4);
 
         const bestSecond = measurements
-          .filter((m): m is typeof m & { second: number } => m.second !== null)
+          .filter((m): m is MeasurementResult & { second: number } => m.second !== null)
           .sort((a, b) => sport.isLowerBetter ? a.second - b.second : b.second - a.second)
           .slice(0, 4);
 
