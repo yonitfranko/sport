@@ -107,14 +107,16 @@ export default function SportPage() {
         const gradeStudents = students.filter((s: Student) => grade.studentIds.includes(s.id));
         const measurements = gradeStudents.map(student => {
           const measurement = student.measurements.find((m: Measurement) => m.sportId === sportId && m.gradeId === grade.id);
+          if (!measurement) return null;
+          
           return {
             student,
-            first: measurement?.first ?? null,
-            second: measurement?.second ?? null,
-            firstDate: measurement?.firstDate ?? '',
-            secondDate: measurement?.secondDate ?? ''
+            first: measurement.first,
+            second: measurement.second,
+            firstDate: measurement.firstDate ?? '',
+            secondDate: measurement.secondDate ?? ''
           };
-        });
+        }).filter((m): m is NonNullable<typeof m> => m !== null);
 
         const bestFirst = measurements
           .filter((m): m is MeasurementResult & { first: number } => m.first !== null)
